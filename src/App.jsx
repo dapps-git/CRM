@@ -17,23 +17,17 @@ import Leaves from './pages/Leaves';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
-// Guard to make sure the user sees the Splash screen first
+// Protected Route — checks if user is logged in
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const hasLoadedSplash = sessionStorage.getItem('hasLoadedSplash');
 
-  if (!hasLoadedSplash) {
-    return <Navigate to="/splash" replace />;
-  }
-
-  // While the JWT is being validated, show a minimal blank screen
   if (loading) {
     return (
       <div
-        style={{ minHeight: '100vh', background: '#0e0906' }}
+        style={{ minHeight: '100vh', background: '#fefae0' }}
         className="flex items-center justify-center"
       >
-        <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-[#8a32c6] border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -45,11 +39,14 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Public Route — if already logged in, redirect to dashboard
 const PublicRoute = ({ children }) => {
-  const hasLoadedSplash = sessionStorage.getItem('hasLoadedSplash');
+  const { user, loading } = useAuth();
 
-  if (!hasLoadedSplash) {
-    return <Navigate to="/splash" replace />;
+  if (loading) return null;
+
+  if (user) {
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -60,13 +57,10 @@ const App = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Splash — always accessible, no auth check */}
-          <Route path="/splash" element={<Splash />} />
-
-          {/* Login — public but guarded by splash */}
+          {/* Public Login Route */}
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
 
-          {/* Protected routes */}
+          {/* Protected Application Routes */}
           <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/business" element={<ProtectedRoute><Layout><Business /></Layout></ProtectedRoute>} />
           <Route path="/finance" element={<ProtectedRoute><Layout><Finance /></Layout></ProtectedRoute>} />
@@ -75,8 +69,8 @@ const App = () => {
           <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
 
-          {/* Any unknown route → Splash first */}
-          <Route path="*" element={<Navigate to="/splash" replace />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
 
