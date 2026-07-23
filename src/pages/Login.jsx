@@ -49,22 +49,14 @@ const Login = () => {
     if (!email || !password) return toast.error('Please fill in all fields');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.message || 'Invalid credentials');
-      } else {
-        localStorage.setItem('token', data.token);
-        setUser({ _id: data._id, email: data.email });
-        toast.success(`Welcome to ${companyName}!`);
-        navigate('/');
-      }
-    } catch {
-      toast.error('Cannot reach server. Is the backend running on port 5000?');
+      const res = await api.post('/auth/login', { email, password });
+      const data = res.data;
+      localStorage.setItem('token', data.token);
+      setUser({ _id: data._id, email: data.email });
+      toast.success(`Welcome to ${companyName}!`);
+      navigate('/');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
