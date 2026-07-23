@@ -37,98 +37,95 @@ const Splash = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden select-none"
-      style={{ background: 'radial-gradient(circle at 50% 40%, #160d26 0%, #090510 100%)' }}
+      className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden select-none"
+      style={{ background: '#fefae0' }}
     >
-      {/* Background ambient glowing spheres */}
+      {/* Ambient lighting glows (soft purple & gold) */}
       <div 
-        className="absolute pointer-events-none rounded-full" 
+        className="absolute inset-0 pointer-events-none" 
         style={{
-          top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: 500, height: 500,
-          background: 'radial-gradient(circle, rgba(138, 50, 198, 0.22) 0%, rgba(138, 50, 198, 0) 70%)',
-          filter: 'blur(60px)',
+          background: 'radial-gradient(ellipse 70% 60% at 30% 20%, rgba(138,50,198,0.08) 0%, transparent 60%)',
         }} 
       />
       <div 
-        className="absolute pointer-events-none rounded-full" 
+        className="absolute inset-0 pointer-events-none" 
         style={{
-          bottom: '15%', right: '25%',
-          width: 380, height: 380,
-          background: 'radial-gradient(circle, rgba(244, 206, 65, 0.12) 0%, rgba(244, 206, 65, 0) 70%)',
-          filter: 'blur(70px)',
+          background: 'radial-gradient(ellipse 50% 40% at 80% 80%, rgba(244,206,65,0.15) 0%, transparent 55%)',
         }} 
       />
 
       {/* Main glass card container */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.96, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col items-center z-10 w-full max-w-sm px-8 py-10 rounded-3xl"
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col items-center z-10 w-full max-w-sm px-7 py-8 relative overflow-hidden"
         style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(20px)',
+          background: '#ffffff',
+          border: '1px solid rgba(138, 50, 198, 0.15)',
+          borderRadius: '1.25rem',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.05), 0 0 40px rgba(138,50,198,0.02)',
         }}
       >
-        {/* Logo Container with glowing ring */}
+        {/* Top accent gradient line */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #f4ce41, #8a32c6)' }} />
+
+        {/* Logo Badge */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.7 }}
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mb-8 flex flex-col items-center w-full"
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col items-center mb-7 w-full"
         >
           <div 
-            className="rounded-2xl flex items-center justify-center px-6 py-4 relative w-full"
+            className="rounded-2xl flex items-center justify-center overflow-hidden bg-[#8a32c6] px-6 py-3.5 w-full"
             style={{
-              maxHeight: 85,
-              background: 'linear-gradient(135deg, rgba(138, 50, 198, 0.45) 0%, rgba(92, 27, 138, 0.65) 100%)',
-              boxShadow: '0 0 50px rgba(138, 50, 198, 0.6), 0 10px 25px rgba(0, 0, 0, 0.4)',
-              border: '1.5px solid rgba(244, 206, 65, 0.65)',
+              boxShadow: '0 6px 20px rgba(138,50,198,0.25)',
+              border: '1px solid rgba(244,206,65,0.4)',
+              maxWidth: '270px',
             }}
           >
-            <img src={logoImg} alt="Logo" style={{ width: '100%', height: 52, objectFit: 'contain' }} />
+            <img src={logoImg} alt="Logo" style={{ width: '100%', height: 44, objectFit: 'contain' }} />
           </div>
         </motion.div>
 
-        {/* Progress bar area */}
+        {/* Progress area */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
           className="w-full space-y-3"
         >
-          {/* Progress bar track */}
+          {/* Track */}
           <div 
             className="w-full rounded-full overflow-hidden p-0.5" 
             style={{
-              height: 8,
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              height: 7,
+              background: '#f3eef8',
+              border: '1px solid rgba(138, 50, 198, 0.12)',
             }}
           >
             <div
               className="h-full rounded-full"
               style={{
                 width: `${progress}%`,
-                background: 'linear-gradient(90deg, #8a32c6, #b07ef8, #f4ce41)',
-                boxShadow: '0 0 15px rgba(244, 206, 65, 0.6)',
-                transition: 'width 0.06s linear',
+                background: 'linear-gradient(90deg, #8a32c6, #f4ce41)',
+                boxShadow: '0 0 10px rgba(138, 50, 198, 0.35)',
+                transition: 'width 0.05s linear',
               }}
             />
           </div>
 
-          {/* Status text & percentage */}
+          {/* Status & percentage */}
           <div className="flex justify-between items-center text-xs px-0.5">
             <span 
               style={{
-                fontSize: '11px',
-                color: 'rgba(237, 223, 249, 0.75)',
-                fontWeight: 600,
+                fontSize: '10px',
+                color: '#76726a',
+                fontWeight: 700,
                 fontFamily: 'Montserrat, sans-serif',
-                letterSpacing: '0.04em',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
               }}
             >
               {statusText}
@@ -136,9 +133,9 @@ const Splash = () => {
             <span 
               style={{
                 fontSize: '11px',
-                fontFamily: 'JetBrains Mono, monospace',
-                color: '#f4ce41',
-                fontWeight: 700,
+                fontFamily: 'Montserrat, sans-serif',
+                color: '#8a32c6',
+                fontWeight: 800,
               }}
             >
               {progress}%
@@ -151,18 +148,18 @@ const Splash = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-        className="absolute bottom-8"
+        transition={{ delay: 0.6, duration: 0.5 }}
+        className="absolute bottom-6"
         style={{
-          fontSize: '0.62rem',
-          letterSpacing: '0.22em',
-          color: 'rgba(237, 223, 249, 0.35)',
-          fontWeight: 700,
+          fontSize: '0.6rem',
+          letterSpacing: '0.2em',
+          color: '#8c877d',
+          fontWeight: 800,
           textTransform: 'uppercase',
           fontFamily: 'Montserrat, sans-serif',
         }}
       >
-        Management Workspace
+        CRM Management System
       </motion.div>
     </div>
   );
