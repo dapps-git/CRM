@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-const rawBase = import.meta.env.VITE_API_URL || '';
+const rawBase = import.meta.env.VITE_API_URL || 'https://tweaki.pw/crm';
 const cleanBase = rawBase.replace(/\/+$/, '');
-const baseURL = cleanBase 
-  ? (cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`)
-  : '/api';
+const baseURL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 
 const api = axios.create({
   baseURL,
