@@ -22,11 +22,11 @@ const INPUT_BLUR  = { borderColor: 'rgba(138, 50, 198, 0.18)', boxShadow: 'none'
 
 const LABEL_STYLE = {
   display: 'block',
-  fontSize: '9px',
+  fontSize: '10px',
   fontWeight: 800,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
-  color: '#76726a',
+  color: 'rgba(255, 255, 255, 0.9)',
   marginBottom: 8,
   fontFamily: 'Montserrat, sans-serif',
 };
@@ -87,45 +87,38 @@ const Login = () => {
     >
       {/* Background glows (soft yellow/purple) */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse 70% 60% at 30% 20%, rgba(138,50,198,0.06) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse 70% 60% at 30% 20%, rgba(138,50,198,0.12) 0%, transparent 60%)',
       }} />
       <div className="absolute inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse 50% 40% at 80% 80%, rgba(244,206,65,0.12) 0%, transparent 55%)',
+        background: 'radial-gradient(ellipse 50% 40% at 80% 80%, rgba(244,206,65,0.18) 0%, transparent 55%)',
       }} />
 
-      {/* Login Card */}
+      {/* Login Card - Rich Violet Container */}
       <motion.div
         initial={{ opacity: 0, y: 28, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-sm z-10 relative"
         style={{
-          background: '#ffffff',
-          border: '1px solid rgba(138, 50, 198, 0.15)',
-          borderRadius: '1.25rem',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.05), 0 0 40px rgba(138,50,198,0.02)',
-          padding: '2.25rem 1.75rem',
+          background: 'linear-gradient(145deg, #8a32c6 0%, #681ea8 100%)',
+          border: '1px solid rgba(244, 206, 65, 0.35)',
+          borderRadius: '1.5rem',
+          boxShadow: '0 25px 60px rgba(138,50,198,0.35), 0 0 40px rgba(138,50,198,0.15)',
+          padding: '2.5rem 2rem',
           overflow: 'hidden',
         }}
       >
-        {/* Yellow/Purple Top Border Accent Line */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #f4ce41, #8a32c6)' }} />
+        {/* Top Gold Accent Line */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #f4ce41, #ffffff)' }} />
 
-        {/* Logo + Brand */}
+        {/* Logo Direct Placement (No inner box) */}
         <div className="flex flex-col items-center mb-8">
-          <div className="mb-4 rounded-2xl flex items-center justify-center overflow-hidden bg-[#8a32c6] px-6 py-3.5" style={{
-            boxShadow: '0 6px 20px rgba(138,50,198,0.25)',
-            border: '1px solid rgba(244,206,65,0.4)',
-            maxWidth: '270px',
-            width: '100%',
-          }}>
-            <img 
-              src={companyLogo || logoImg} 
-              alt="Logo" 
-              style={{ width: '100%', height: 44, objectFit: 'contain' }} 
-              onError={(e) => { e.target.src = logoImg; }}
-            />
-          </div>
+          <img 
+            src={companyLogo || logoImg} 
+            alt="Logo" 
+            style={{ width: '80%', maxHeight: 48, objectFit: 'contain' }} 
+            onError={(e) => { e.target.src = logoImg; }}
+          />
         </div>
 
         <AnimatePresence mode="wait">
@@ -140,11 +133,11 @@ const Login = () => {
               <div>
                 <label style={LABEL_STYLE}>Email Address</label>
                 <div className="relative">
-                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#8a32c6', fontSize: 14 }} />
+                  <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#8a32c6', fontSize: 15 }} />
                   <input
                     id="login-email" type="email" required placeholder="your@email.com"
                     value={email} onChange={e => setEmail(e.target.value)}
-                    style={{ ...INPUT_BASE, width: '100%', padding: '10px 12px 10px 36px' }}
+                    style={{ ...INPUT_BASE, width: '100%', padding: '11px 12px 11px 38px', borderRadius: '0.75rem' }}
                     onFocus={e => Object.assign(e.target.style, INPUT_FOCUS)}
                     onBlur={e => Object.assign(e.target.style, INPUT_BLUR)}
                   />
@@ -155,45 +148,45 @@ const Login = () => {
                 <div className="flex justify-between items-center mb-2">
                   <label style={LABEL_STYLE}>Password</label>
                   <button type="button" onClick={() => setStage('forgot_email')}
-                    style={{ fontSize: '9px', color: '#b08d02', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', border: 'none', background: 'none', cursor: 'pointer' }}>
+                    style={{ fontSize: '10px', color: '#f4ce41', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', border: 'none', background: 'none', cursor: 'pointer' }}>
                     Forgot?
                   </button>
                 </div>
                 <div className="relative">
-                  <FiLock className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#8a32c6', fontSize: 14 }} />
+                  <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#8a32c6', fontSize: 15 }} />
                   <input
                     id="login-password" type={showPassword ? 'text' : 'password'}
                     required placeholder="••••••••••"
                     value={password} onChange={e => setPassword(e.target.value)}
-                    style={{ ...INPUT_BASE, width: '100%', padding: '10px 36px 10px 36px' }}
+                    style={{ ...INPUT_BASE, width: '100%', padding: '11px 38px 11px 38px', borderRadius: '0.75rem' }}
                     onFocus={e => Object.assign(e.target.style, INPUT_FOCUS)}
                     onBlur={e => Object.assign(e.target.style, INPUT_BLUR)}
                   />
                   <button type="button" onClick={() => setShowPassword(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{ color: '#a5a198', border: 'none', background: 'none', cursor: 'pointer' }}>
-                    {showPassword ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2"
+                    style={{ color: '#8a32c6', border: 'none', background: 'none', cursor: 'pointer' }}>
+                    {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
                   </button>
                 </div>
               </div>
 
               <button
                 id="login-submit" type="submit" disabled={loading}
-                className="w-full py-3 font-bold rounded-xl text-white text-sm mt-2 transition-all duration-200"
+                className="w-full py-3.5 font-extrabold rounded-xl text-sm mt-3 transition-all duration-200 uppercase tracking-wider"
                 style={{
-                  background: loading ? '#c9a8e8' : '#8a32c6',
-                  boxShadow: loading ? 'none' : '0 4px 16px rgba(138,50,198,0.25)',
-                  letterSpacing: '0.06em',
+                  background: loading ? '#ebd77f' : 'linear-gradient(90deg, #f4ce41 0%, #ebd46a 100%)',
+                  color: '#43126d',
+                  boxShadow: loading ? 'none' : '0 6px 20px rgba(0,0,0,0.2)',
                   fontFamily: 'Montserrat, sans-serif',
                   border: 'none',
                   cursor: loading ? 'not-allowed' : 'pointer',
                 }}
-                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#a35ad6'; }}
-                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#8a32c6'; }}
+                onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={e => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 {loading ? (
                   <span className="flex items-center justify-center space-x-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-[#43126d] border-t-transparent rounded-full animate-spin" />
                     <span>Signing in...</span>
                   </span>
                 ) : 'Sign In'}

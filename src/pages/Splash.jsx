@@ -70,23 +70,14 @@ const Splash = () => {
         {/* Top accent gradient line */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #f4ce41, #8a32c6)' }} />
 
-        {/* Logo Badge */}
+        {/* Logo direct placement */}
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-center mb-7 w-full"
+          className="flex flex-col items-center mb-6 w-full"
         >
-          <div 
-            className="rounded-2xl flex items-center justify-center overflow-hidden bg-[#8a32c6] px-6 py-3.5 w-full"
-            style={{
-              boxShadow: '0 6px 20px rgba(138,50,198,0.25)',
-              border: '1px solid rgba(244,206,65,0.4)',
-              maxWidth: '270px',
-            }}
-          >
-            <img src={logoImg} alt="Logo" style={{ width: '100%', height: 44, objectFit: 'contain' }} />
-          </div>
+          <img src={logoImg} alt="Logo" style={{ width: '75%', maxHeight: 50, objectFit: 'contain' }} />
         </motion.div>
 
         {/* Progress area */}
