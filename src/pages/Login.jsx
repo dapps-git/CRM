@@ -46,10 +46,12 @@ const Login = () => {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) return toast.error('Please fill in all fields');
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    if (!cleanEmail || !cleanPassword) return toast.error('Please fill in all fields');
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', { email: cleanEmail, password: cleanPassword });
       const data = res.data;
       localStorage.setItem('token', data.token);
       setUser({ _id: data._id, email: data.email });
