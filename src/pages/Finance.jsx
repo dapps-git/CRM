@@ -84,11 +84,16 @@ const Finance = () => {
     fetchFinanceData();
   }, []);
 
+  const [submittingIncome, setSubmittingIncome] = useState(false);
+  const [submittingExpense, setSubmittingExpense] = useState(false);
+
   // Form submits
   const handleIncomeSubmit = async (e) => {
     e.preventDefault();
+    if (submittingIncome) return;
     if (!incomeForm.amount || !incomeForm.source) return toast.error('Please enter amount and source');
 
+    setSubmittingIncome(true);
     const formData = new FormData();
     formData.append('amount', incomeForm.amount);
     formData.append('date', incomeForm.date);
@@ -122,15 +127,19 @@ const Finance = () => {
       });
       setIncomeModalOpen(false);
       fetchFinanceData();
-    } catch {
-      toast.error('Failed to log income');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to log income');
+    } finally {
+      setSubmittingIncome(false);
     }
   };
 
   const handleExpenseSubmit = async (e) => {
     e.preventDefault();
+    if (submittingExpense) return;
     if (!expenseForm.amount || !expenseForm.reason) return toast.error('Please enter amount and reason');
 
+    setSubmittingExpense(true);
     const formData = new FormData();
     formData.append('amount', expenseForm.amount);
     formData.append('date', expenseForm.date);
@@ -158,8 +167,10 @@ const Finance = () => {
       });
       setExpenseModalOpen(false);
       fetchFinanceData();
-    } catch {
-      toast.error('Failed to log expense');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to log expense');
+    } finally {
+      setSubmittingExpense(false);
     }
   };
 
@@ -661,9 +672,17 @@ const Finance = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20"
+                  disabled={submittingIncome}
+                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20 flex items-center justify-center space-x-2"
                 >
-                  Log Income
+                  {submittingIncome ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Log Income</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -767,9 +786,17 @@ const Finance = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20"
+                  disabled={submittingExpense}
+                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20 flex items-center justify-center space-x-2"
                 >
-                  Log Expense
+                  {submittingExpense ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Log Expense</span>
+                  )}
                 </button>
               </div>
             </form>

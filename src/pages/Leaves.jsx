@@ -71,13 +71,17 @@ const Leaves = () => {
     setIsModalOpen(true);
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   // Submit Leave Mark
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (!formMemberId || !formDate || !formStatus) {
       return toast.error('Please fill in all required fields');
     }
 
+    setSubmitting(true);
     try {
       await api.post('/leave', {
         memberId: formMemberId,
@@ -91,6 +95,8 @@ const Leaves = () => {
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save leave record');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -417,9 +423,17 @@ const Leaves = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20"
+                  disabled={submitting}
+                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20 flex items-center justify-center space-x-2"
                 >
-                  Submit
+                  {submitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Submit</span>
+                  )}
                 </button>
               </div>
             </form>

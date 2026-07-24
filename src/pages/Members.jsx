@@ -38,12 +38,16 @@ const Members = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (!form.name || !form.phoneNumber) {
       return toast.error('Please enter name and phone number');
     }
 
+    setSubmitting(true);
     try {
       if (editId) {
         await api.put(`/member/${editId}`, form);
@@ -57,6 +61,8 @@ const Members = () => {
       fetchMembers();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Submission failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -245,9 +251,17 @@ const Members = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20"
+                  disabled={submitting}
+                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20 flex items-center justify-center space-x-2"
                 >
-                  Save Member
+                  {submitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Member</span>
+                  )}
                 </button>
               </div>
 

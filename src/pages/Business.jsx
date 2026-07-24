@@ -65,8 +65,13 @@ const Business = () => {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
     const payload = {
       ...form,
       requirement: selectedRequirements.join(', ')
@@ -84,6 +89,8 @@ const Business = () => {
       fetchBusinesses();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit lead');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -432,11 +439,12 @@ const Business = () => {
                   Cancel
                 </button>
                 <button type="submit"
-                  style={{ flex: 1, padding: '9px 0', background: '#8a32c6', border: 'none', borderRadius: 7, color: '#fff', fontWeight: 800, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: '0 4px 16px rgba(138,50,198,0.3)', fontFamily: 'Montserrat, sans-serif' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#a35ad6'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#8a32c6'}
+                  disabled={submitting}
+                  style={{ flex: 1, padding: '9px 0', background: '#8a32c6', border: 'none', borderRadius: 7, color: '#fff', fontWeight: 800, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.6 : 1, boxShadow: '0 4px 16px rgba(138,50,198,0.3)', fontFamily: 'Montserrat, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  onMouseEnter={e => { if(!submitting) e.currentTarget.style.background = '#a35ad6'; }}
+                  onMouseLeave={e => { if(!submitting) e.currentTarget.style.background = '#8a32c6'; }}
                 >
-                  Save Lead
+                  {submitting ? 'Saving...' : 'Save Lead'}
                 </button>
               </div>
             </form>
