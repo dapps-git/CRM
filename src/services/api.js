@@ -8,11 +8,12 @@ const api = axios.create({
   baseURL,
 });
 
-// Attach JWT token to every request
+// Attach JWT token to requests (skip /settings to avoid unnecessary preflight)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !config.url?.endsWith('/settings')) {
+      config.headers['x-auth-token'] = token;
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
