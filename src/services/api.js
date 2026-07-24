@@ -8,13 +8,14 @@ const api = axios.create({
   baseURL,
 });
 
-// Attach JWT token as query parameter to eliminate CORS preflight header restrictions
+// Attach JWT token to requests via Authorization header and query parameter fallback
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.params = config.params || {};
       config.params.token = token;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
