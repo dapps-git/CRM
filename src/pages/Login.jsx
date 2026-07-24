@@ -58,7 +58,14 @@ const Login = () => {
       toast.success(`Welcome to ${companyName}!`);
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid credentials');
+      console.error('Login submit error:', err);
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else if (err.request) {
+        toast.error('Network Error: Unable to connect to backend server');
+      } else {
+        toast.error(err.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }
