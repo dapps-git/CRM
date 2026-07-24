@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post('/auth/forgot-password', { email });
       toast.success(res.data.message || 'Reset code sent to email');
-      return { success: true };
+      return { success: true, otp: res.data.otp };
     } catch (error) {
       const msg = error.response?.data?.message || 'Failed to request reset';
       toast.error(msg);

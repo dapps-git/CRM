@@ -72,13 +72,21 @@ const Login = () => {
     }
   };
 
+  const [issuedOtp, setIssuedOtp] = useState('');
+
   const handleForgotEmailSubmit = async (e) => {
     e.preventDefault();
     if (!email) return toast.error('Please enter your email');
     setLoading(true);
     const res = await requestForgotPassword(email);
     setLoading(false);
-    if (res.success) setStage('forgot_reset');
+    if (res.success) {
+      if (res.otp) {
+        setIssuedOtp(res.otp);
+        setOtp(res.otp);
+      }
+      setStage('forgot_reset');
+    }
   };
 
   const handleForgotResetSubmit = async (e) => {
@@ -87,7 +95,7 @@ const Login = () => {
     setLoading(true);
     const res = await confirmPasswordReset(email, otp, newPassword);
     setLoading(false);
-    if (res.success) { setStage('login'); setOtp(''); setNewPassword(''); }
+    if (res.success) { setStage('login'); setOtp(''); setNewPassword(''); setIssuedOtp(''); }
   };
 
   return (
@@ -212,11 +220,11 @@ const Login = () => {
               onSubmit={handleForgotEmailSubmit} className="space-y-5"
             >
               <button type="button" onClick={() => setStage('login')}
-                style={{ color: '#8a32c6', fontSize: '9px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', cursor: 'pointer' }}>
-                <FiArrowLeft size={11} /> Back to Login
+                style={{ color: '#f4ce41', fontSize: '9.5px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', cursor: 'pointer' }}>
+                <FiArrowLeft size={12} /> Back to Login
               </button>
-              <p style={{ fontSize: '11px', color: '#76726a', lineHeight: 1.7, fontWeight: 500 }}>
-                Enter your registered email — a 6-digit OTP will be sent to reset your password.
+              <p style={{ fontSize: '11px', color: '#ffffff', lineHeight: 1.7, fontWeight: 500 }}>
+                Enter your registered email — a 6-digit OTP will be issued to reset your password.
               </p>
               <div>
                 <label style={LABEL_STYLE}>Registered Email</label>
@@ -230,20 +238,19 @@ const Login = () => {
                   />
                 </div>
               </div>
-              <button type="submit" disabled={loading} className="w-full py-3 font-bold rounded-xl text-white text-sm"
+              <button type="submit" disabled={loading} className="w-full py-3.5 font-bold rounded-xl text-white text-sm"
                 style={{
-                  background: loading ? '#c9a8e8' : '#8a32c6',
-                  boxShadow: loading ? 'none' : '0 4px 16px rgba(138,50,198,0.25)',
+                  background: loading ? '#c9a8e8' : '#f4ce41',
+                  color: loading ? '#ffffff' : '#43126d',
+                  boxShadow: loading ? 'none' : '0 6px 20px rgba(0,0,0,0.2)',
                   opacity: loading ? 0.6 : 1,
                   fontFamily: 'Montserrat, sans-serif',
                   letterSpacing: '0.06em',
                   border: 'none',
                   cursor: loading ? 'not-allowed' : 'pointer'
                 }}
-                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#a35ad6'; }}
-                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#8a32c6'; }}
               >
-                {loading ? 'Sending OTP...' : 'Send Reset OTP'}
+                {loading ? 'Issuing OTP...' : 'Send Reset OTP'}
               </button>
             </motion.form>
           )}
@@ -255,11 +262,17 @@ const Login = () => {
               exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.25 }}
               onSubmit={handleForgotResetSubmit} className="space-y-5"
             >
-              <div className="rounded-lg p-3 text-xs" style={{
-                background: 'rgba(138,50,198,0.06)', border: '1px solid rgba(138,50,198,0.12)',
-                color: '#2c2438', lineHeight: 1.7, fontWeight: 500
+              <div className="rounded-xl p-3 text-xs space-y-2" style={{
+                background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(244,206,65,0.3)',
+                color: '#ffffff', lineHeight: 1.6, fontWeight: 500
               }}>
-                OTP sent to <span style={{ color: '#b08d02', fontWeight: 700 }}>{email}</span>
+                <div>OTP code issued for <span style={{ color: '#f4ce41', fontWeight: 700 }}>{email}</span></div>
+                {issuedOtp && (
+                  <div className="flex items-center justify-between pt-1.5 border-t border-white/10">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-amber-300">Your Reset OTP Code:</span>
+                    <span className="font-mono font-extrabold text-sm text-yellow-300 bg-purple-950/80 px-2.5 py-0.5 rounded border border-yellow-400/40 tracking-widest">{issuedOtp}</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -300,18 +313,17 @@ const Login = () => {
                   Back
                 </button>
                 <button type="submit" disabled={loading}
-                  className="flex-1 py-3 font-bold rounded-xl text-sm text-white"
+                  className="flex-1 py-3 font-bold rounded-xl text-sm"
                   style={{
-                    background: loading ? '#c9a8e8' : '#8a32c6',
-                    boxShadow: loading ? 'none' : '0 4px 16px rgba(138,50,198,0.25)',
+                    background: loading ? '#ebd77f' : '#f4ce41',
+                    color: '#43126d',
+                    boxShadow: loading ? 'none' : '0 4px 16px rgba(0,0,0,0.2)',
                     opacity: loading ? 0.6 : 1,
                     fontFamily: 'Montserrat, sans-serif',
                     letterSpacing: '0.06em',
                     border: 'none',
                     cursor: loading ? 'not-allowed' : 'pointer'
                   }}
-                  onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#a35ad6'; }}
-                  onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#8a32c6'; }}
                 >
                   {loading ? 'Resetting...' : 'Reset Password'}
                 </button>
