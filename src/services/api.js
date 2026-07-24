@@ -26,14 +26,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const code = error.response.data?.code;
-      // Clear stale token so branding still loads, redirect if logged in
-      if (code === 'TOKEN_EXPIRED' || code === 'TOKEN_INVALID' || code === 'USER_NOT_FOUND') {
-        localStorage.removeItem('token');
-        // Only redirect if we're not already on the login page
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
+      localStorage.removeItem('token');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
