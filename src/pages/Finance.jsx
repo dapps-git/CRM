@@ -456,7 +456,8 @@ const Finance = () => {
                     <td className="py-2.5 px-3 text-right">
                       <div className="inline-flex items-center space-x-2">
                         {item.billImage && (
-                          <a href={item.billImage} target="_blank" rel="noreferrer" className="text-brand-500 hover:text-brand-600 p-1" title="View Document">
+                          <a href={item.billImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1.5 text-brand-600 hover:text-brand-700 p-1" title="View Bill Document">
+                            <img src={item.billImage} alt="Bill" className="w-8 h-8 object-cover rounded border border-neutral-200 shadow-sm" />
                             <FiFile size={12} />
                           </a>
                         )}
@@ -512,7 +513,8 @@ const Finance = () => {
                     <td className="py-2.5 px-3 text-right">
                       <div className="inline-flex items-center space-x-2">
                         {item.receiptImage && (
-                          <a href={item.receiptImage} target="_blank" rel="noreferrer" className="text-brand-500 hover:text-brand-600 p-1" title="View Document">
+                          <a href={item.receiptImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1.5 text-brand-600 hover:text-brand-700 p-1" title="View Receipt Document">
+                            <img src={item.receiptImage} alt="Receipt" className="w-8 h-8 object-cover rounded border border-neutral-200 shadow-sm" />
                             <FiFile size={12} />
                           </a>
                         )}
