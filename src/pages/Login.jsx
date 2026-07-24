@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiMail, FiLock, FiKey, FiArrowLeft, FiEye, FiEyeOff } from 'react-icons/fi';
 import logoImg from '../assets/logo.png';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 /* Shared input styles for light theme */
 const INPUT_BASE = {
