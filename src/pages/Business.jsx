@@ -74,7 +74,7 @@ const Business = () => {
     setSubmitting(true);
     const payload = {
       ...form,
-      requirement: selectedRequirements.join(', ')
+      requirement: selectedRequirements
     };
     try {
       if (editId) {
@@ -116,9 +116,13 @@ const Business = () => {
       description: item.description,
       date: new Date(item.date).toISOString().split('T')[0]
     });
-    const parsedReqs = item.requirement 
-      ? item.requirement.split(',').map(s => s.trim()).filter(Boolean) 
-      : ['Website Development'];
+    // Handle both old string format and new array format from DB
+    let parsedReqs = ['Website Development'];
+    if (Array.isArray(item.requirement) && item.requirement.length > 0) {
+      parsedReqs = item.requirement;
+    } else if (typeof item.requirement === 'string' && item.requirement) {
+      parsedReqs = item.requirement.split(',').map(s => s.trim()).filter(Boolean);
+    }
     setSelectedRequirements(parsedReqs);
     setIsModalOpen(true);
   };
@@ -279,7 +283,7 @@ const Business = () => {
                     <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.location}</td>
                     <td style={{ padding: '9px 12px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
-                        {(item.requirement ? item.requirement.split(', ') : []).map((req, i) => (
+                        {(Array.isArray(item.requirement) ? item.requirement : (item.requirement ? item.requirement.split(', ') : [])).map((req, i) => (
                           <span key={i} style={{ padding: '2px 7px', borderRadius: 99, fontSize: 9, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', background: 'rgba(138,50,198,0.08)', border: '1px solid rgba(138,50,198,0.2)', color: '#8a32c6', whiteSpace: 'nowrap' }}>
                             {req}
                           </span>
