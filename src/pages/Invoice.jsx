@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FiFileText, FiPlus, FiTrash2, FiEdit, FiDownload, 
-  FiSearch, FiX, FiCheck, FiPrinter, FiEdit3, FiPhone, FiMail, FiGlobe, FiMapPin, FiHeart 
+  FiSearch, FiX, FiCheck, FiPrinter, FiEdit3, FiPhone, FiMail, FiGlobe, FiMapPin, FiHeart, FiUser 
 } from 'react-icons/fi';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import logoImg from '../assets/logo.png';
+import invoiceLogo from '../assets/invoicelogo.webp';
 import ConfirmModal from '../components/ConfirmModal';
 import html2pdf from 'html2pdf.js';
 
@@ -199,7 +200,8 @@ const Invoice = () => {
       filename: `${saved.invoiceNumber}_${saved.clientName.replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'avoid-all' }
     };
 
     try {
@@ -717,210 +719,216 @@ const Invoice = () => {
                 ref={pdfRef}
                 style={{
                   width: '790px',
-                  minHeight: '1020px',
+                  minHeight: '940px',
                   background: '#ffffff',
                   color: '#2b1c40',
                   fontFamily: 'Montserrat, sans-serif',
-                  padding: '40px 48px',
+                  padding: '32px 36px',
                   position: 'relative',
                   boxSizing: 'border-box',
-                  margin: '0 auto'
+                  margin: '0 auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}
               >
-                {/* ── Top Header Section ── */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
-                  {/* Top Left: Logo + Permanent Company Address Box */}
-                  <div>
-                    <img 
-                      src={logoImg} 
-                      alt="Crevion Ads" 
-                      style={{ height: '52px', objectFit: 'contain', marginBottom: '16px' }}
-                    />
-                    
-                    {/* Crevion Ads Permanent Address Details Box */}
-                    <div style={{
-                      border: '1.5px solid #d4c8e3',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
-                      width: '260px',
-                      fontSize: '10px',
-                      color: '#4a3b60',
-                      lineHeight: '1.6'
-                    }}>
-                      <div style={{ fontWeight: '800', fontSize: '12px', color: '#2c1947', marginBottom: '4px' }}>
-                        {companyDetails.name}
+                <div>
+                  {/* ── Top Header Section ── */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                    {/* Top Left: Logo + Permanent Company Address Box */}
+                    <div>
+                      <img 
+                        src={invoiceLogo} 
+                        alt="Crevion Ads" 
+                        style={{ height: '56px', objectFit: 'contain', marginBottom: '10px' }}
+                      />
+                      
+                      {/* Crevion Ads Permanent Address Details Box */}
+                      <div style={{
+                        border: '1.5px solid #d4c8e3',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        width: '250px',
+                        fontSize: '10px',
+                        color: '#4a3b60',
+                        lineHeight: '1.5'
+                      }}>
+                        <div style={{ fontWeight: '800', fontSize: '12px', color: '#2c1947', marginBottom: '3px' }}>
+                          {companyDetails.name}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                          <FiPhone size={10} style={{ color: '#3c2269' }} />
+                          <span>{companyDetails.phone}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                          <FiMail size={10} style={{ color: '#3c2269' }} />
+                          <span>{companyDetails.email}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                          <FiGlobe size={10} style={{ color: '#3c2269' }} />
+                          <span>{companyDetails.website}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <FiMapPin size={10} style={{ color: '#3c2269', marginTop: '2px' }} />
+                          <span>{companyDetails.address}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                        <FiPhone size={10} style={{ color: '#3c2269' }} />
-                        <span>{companyDetails.phone}</span>
+                    </div>
+
+                    {/* Top Right: INVOICE title + Gold pill + Dates */}
+                    <div style={{ textAlign: 'right' }}>
+                      <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#3c2269', letterSpacing: '0.06em', margin: '0 0 4px 0', lineHeight: 1.1 }}>
+                        INVOICE
+                      </h1>
+                      <div style={{ 
+                        display: 'inline-block', 
+                        background: '#f4ce41', 
+                        color: '#2c1947', 
+                        fontWeight: '800', 
+                        fontSize: '12px', 
+                        padding: '3px 12px', 
+                        borderRadius: '5px',
+                        marginBottom: '12px'
+                      }}>
+                        {invoiceForm.invoiceNumber}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                        <FiMail size={10} style={{ color: '#3c2269' }} />
-                        <span>{companyDetails.email}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                        <FiGlobe size={10} style={{ color: '#3c2269' }} />
-                        <span>{companyDetails.website}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                        <FiMapPin size={10} style={{ color: '#3c2269', marginTop: '3px' }} />
-                        <span>{companyDetails.address}</span>
+
+                      <div style={{ fontSize: '10.5px', color: '#685980', lineHeight: '1.7' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px' }}>
+                          <span style={{ color: '#685980', fontWeight: '600' }}>Invoice Date</span>
+                          <span style={{ fontWeight: '700', color: '#2c1947', width: '85px' }}>: {invoiceForm.invoiceDate}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px' }}>
+                          <span style={{ color: '#685980', fontWeight: '600' }}>Terms</span>
+                          <span style={{ fontWeight: '700', color: '#2c1947', width: '85px' }}>: {invoiceForm.terms}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px' }}>
+                          <span style={{ color: '#685980', fontWeight: '600' }}>Due Date</span>
+                          <span style={{ fontWeight: '700', color: '#2c1947', width: '85px' }}>: {invoiceForm.dueDate}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Top Right: INVOICE title + Gold pill + Dates */}
-                  <div style={{ textAlign: 'right' }}>
-                    <h1 style={{ fontSize: '42px', fontWeight: '900', color: '#3c2269', tracking: '0.05em', margin: '0 0 6px 0', lineHeight: 1 }}>
-                      INVOICE
-                    </h1>
-                    <div style={{ 
-                      display: 'inline-block', 
-                      background: '#f4ce41', 
-                      color: '#2c1947', 
-                      fontWeight: '800', 
-                      fontSize: '13px', 
-                      padding: '4px 14px', 
-                      borderRadius: '6px',
-                      marginBottom: '16px'
-                    }}>
-                      {invoiceForm.invoiceNumber}
+                  {/* ── Bill To Section ── */}
+                  <div style={{ marginBottom: '18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '800', color: '#3c2269', marginBottom: '6px' }}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '4px', background: '#3c2269', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FiUser size={11} />
+                      </div>
+                      <span>Bill TO :</span>
                     </div>
-
-                    <div style={{ fontSize: '11px', color: '#685980', lineHeight: '1.8' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
-                        <span style={{ color: '#685980', fontWeight: '600' }}>Invoice Date</span>
-                        <span style={{ fontWeight: '700', color: '#2c1947', width: '90px' }}>: {invoiceForm.invoiceDate}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
-                        <span style={{ color: '#685980', fontWeight: '600' }}>Terms</span>
-                        <span style={{ fontWeight: '700', color: '#2c1947', width: '90px' }}>: {invoiceForm.terms}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
-                        <span style={{ color: '#685980', fontWeight: '600' }}>Due Date</span>
-                        <span style={{ fontWeight: '700', color: '#2c1947', width: '90px' }}>: {invoiceForm.dueDate}</span>
-                      </div>
+                    <div style={{ paddingLeft: '24px', fontSize: '11.5px', color: '#33234d', fontWeight: '600', lineHeight: '1.4' }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#2c1947' }}>{invoiceForm.clientName || 'Client Name'}</div>
+                      {invoiceForm.clientPhone && <div>{invoiceForm.clientPhone}</div>}
+                      {invoiceForm.clientEmail && <div>{invoiceForm.clientEmail}</div>}
+                      {invoiceForm.clientAddress && <div>{invoiceForm.clientAddress}</div>}
                     </div>
                   </div>
-                </div>
 
-                {/* ── Bill To Section ── */}
-                <div style={{ marginBottom: '28px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '800', color: '#3c2269', marginBottom: '8px' }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', background: '#3c2269', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
-                      👤
-                    </div>
-                    <span>Bill TO :</span>
-                  </div>
-                  <div style={{ paddingLeft: '24px', fontSize: '12px', color: '#33234d', fontWeight: '600', lineHeight: '1.5' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#2c1947' }}>{invoiceForm.clientName || 'Client Name'}</div>
-                    {invoiceForm.clientPhone && <div>{invoiceForm.clientPhone}</div>}
-                    {invoiceForm.clientEmail && <div>{invoiceForm.clientEmail}</div>}
-                    {invoiceForm.clientAddress && <div>{invoiceForm.clientAddress}</div>}
-                  </div>
-                </div>
-
-                {/* ── Line Items Table matching reference design ── */}
-                <div style={{
-                  border: '1.5px solid #c9bddb',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  marginBottom: '28px'
-                }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                    <thead>
-                      <tr style={{ background: '#3c2269', color: '#ffffff' }}>
-                        <th style={{ padding: '10px 12px', textAlign: 'center', width: '40px', fontWeight: '800' }}>#</th>
-                        <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '800' }}>Description</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'center', width: '80px', fontWeight: '800' }}>Quantity</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'right', width: '90px', fontWeight: '800' }}>Rate</th>
-                        <th style={{ padding: '10px 16px', textAlign: 'right', width: '100px', fontWeight: '800' }}>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoiceForm.items.map((item, idx) => (
-                        <tr key={idx} style={{ borderBottom: idx < invoiceForm.items.length - 1 ? '1px solid #e0d8eb' : 'none' }}>
-                          <td style={{ padding: '12px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top' }}>
-                            {idx + 1}
-                          </td>
-                          <td style={{ padding: '12px 16px', verticalAlign: 'top' }}>
-                            {/* Bold Title */}
-                            <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '12px', marginBottom: '3px' }}>
-                              {item.title || 'Service Title'}
-                            </div>
-                            {/* Description below title */}
-                            {item.description && (
-                              <div style={{ fontSize: '10px', color: '#685980', fontWeight: '500', lineHeight: '1.4' }}>
-                                {item.description}
-                              </div>
-                            )}
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top' }}>
-                            {item.quantity}
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top' }}>
-                            ₹{Number(item.rate).toLocaleString()}
-                          </td>
-                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#3c2269', verticalAlign: 'top' }}>
-                            ₹{Number(item.amount).toLocaleString()}
-                          </td>
+                  {/* ── Line Items Table matching reference design ── */}
+                  <div style={{
+                    border: '1.5px solid #c9bddb',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    marginBottom: '18px'
+                  }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5px' }}>
+                      <thead>
+                        <tr style={{ background: '#3c2269', color: '#ffffff' }}>
+                          <th style={{ padding: '8px 10px', textAlign: 'center', width: '36px', fontWeight: '800' }}>#</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '800' }}>Description</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'center', width: '75px', fontWeight: '800' }}>Quantity</th>
+                          <th style={{ padding: '8px 10px', textAlign: 'right', width: '85px', fontWeight: '800' }}>Rate</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'right', width: '95px', fontWeight: '800' }}>Amount</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {invoiceForm.items.map((item, idx) => (
+                          <tr key={idx} style={{ borderBottom: idx < invoiceForm.items.length - 1 ? '1px solid #e0d8eb' : 'none' }}>
+                            <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top' }}>
+                              {idx + 1}
+                            </td>
+                            <td style={{ padding: '8px 12px', verticalAlign: 'top' }}>
+                              {/* Bold Title */}
+                              <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '11.5px', marginBottom: '2px' }}>
+                                {item.title || 'Service Title'}
+                              </div>
+                              {/* Description below title */}
+                              {item.description && (
+                                <div style={{ fontSize: '9.5px', color: '#685980', fontWeight: '500', lineHeight: '1.3' }}>
+                                  {item.description}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top' }}>
+                              {item.quantity}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top' }}>
+                              ₹{Number(item.rate).toLocaleString()}
+                            </td>
+                            <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#3c2269', verticalAlign: 'top' }}>
+                              ₹{Number(item.amount).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                {/* ── Summary Totals Box Bottom Right ── */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px' }}>
-                  <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    
-                    {/* TOTAL AMOUNT */}
-                    <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '6px', overflow: 'hidden' }}>
-                      <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '6px 12px', fontWeight: '800', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        TOTAL AMOUNT
+                  {/* ── Summary Totals Box Bottom Right ── */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                    <div style={{ width: '300px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      
+                      {/* TOTAL AMOUNT */}
+                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '5px', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '5px 10px', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          TOTAL AMOUNT
+                        </div>
+                        <div style={{ padding: '5px 12px', background: '#ffffff', fontWeight: '800', fontSize: '11.5px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '90px', textAlign: 'right' }}>
+                          ₹{invoiceForm.totalAmount.toLocaleString()}
+                        </div>
                       </div>
-                      <div style={{ padding: '6px 14px', background: '#ffffff', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '100px', textAlign: 'right' }}>
-                        ₹{invoiceForm.totalAmount.toLocaleString()}
+
+                      {/* RECEIVED AMOUNT */}
+                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '5px', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '5px 10px', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          RECEIVED AMOUNT
+                        </div>
+                        <div style={{ padding: '5px 12px', background: '#ffffff', fontWeight: '800', fontSize: '11.5px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '90px', textAlign: 'right' }}>
+                          ₹{(Number(invoiceForm.receivedAmount) || 0).toLocaleString()}
+                        </div>
                       </div>
+
+                      {/* BALANCE DUE */}
+                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '5px', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '5px 10px', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          BALANCE DUE
+                        </div>
+                        <div style={{ padding: '5px 12px', background: '#ffffff', fontWeight: '800', fontSize: '11.5px', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', minWidth: '90px', textAlign: 'right' }}>
+                          ₹{invoiceForm.balanceDue.toLocaleString()}
+                        </div>
+                      </div>
+
                     </div>
-
-                    {/* RECEIVED AMOUNT */}
-                    <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '6px', overflow: 'hidden' }}>
-                      <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '6px 12px', fontWeight: '800', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        RECEIVED AMOUNT
-                      </div>
-                      <div style={{ padding: '6px 14px', background: '#ffffff', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '100px', textAlign: 'right' }}>
-                        ₹{(Number(invoiceForm.receivedAmount) || 0).toLocaleString()}
-                      </div>
-                    </div>
-
-                    {/* BALANCE DUE */}
-                    <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '6px', overflow: 'hidden' }}>
-                      <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '6px 12px', fontWeight: '800', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        BALANCE DUE
-                      </div>
-                      <div style={{ padding: '6px 14px', background: '#ffffff', fontWeight: '800', fontSize: '12px', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', minWidth: '100px', textAlign: 'right' }}>
-                        ₹{invoiceForm.balanceDue.toLocaleString()}
-                      </div>
-                    </div>
-
                   </div>
                 </div>
 
                 {/* ── Bottom Thank You Footer Box matching reference design ── */}
                 <div style={{
                   border: '1.5px solid #d4c8e3',
-                  borderRadius: '12px',
-                  padding: '16px 20px',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '14px',
+                  gap: '12px',
                   background: '#ffffff',
-                  marginTop: 'auto'
+                  marginTop: 'auto',
+                  marginBottom: '10px'
                 }}>
                   <div style={{
-                    width: '36px',
-                    height: '36px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
                     background: '#3c2269',
                     color: '#ffffff',
@@ -928,13 +936,13 @@ const Invoice = () => {
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <FiHeart size={18} />
+                    <FiHeart size={16} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: '900', color: '#3c2269', lineHeight: '1.2' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#3c2269', lineHeight: '1.2' }}>
                       Thank You!
                     </div>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#685980' }}>
+                    <div style={{ fontSize: '10.5px', fontWeight: '600', color: '#685980' }}>
                       For Your Business
                     </div>
                   </div>
@@ -946,8 +954,10 @@ const Invoice = () => {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: '14px',
-                  background: '#3c2269'
+                  height: '12px',
+                  background: '#3c2269',
+                  borderBottomLeftRadius: '4px',
+                  borderBottomRightRadius: '4px'
                 }} />
 
               </div>
