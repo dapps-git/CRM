@@ -82,7 +82,15 @@ const Invoice = () => {
       ]);
       setInvoices(invRes.data?.invoices || []);
       if (configRes.data) setCompanyDetails(configRes.data);
-      if (sugRes.data) setSuggestions(sugRes.data || []);
+      if (sugRes.data && Array.isArray(sugRes.data)) {
+        const merged = [...DEFAULT_SERVICES];
+        sugRes.data.forEach(item => {
+          if (item && item.title && !merged.some(m => m.title.toLowerCase() === item.title.toLowerCase())) {
+            merged.push(item);
+          }
+        });
+        setSuggestions(merged);
+      }
       
       // Auto-generate invoice number if new
       if (!editingInvoiceId) {
@@ -598,23 +606,41 @@ const Invoice = () => {
                     />
 
                     {/* Autocomplete Dropdown */}
-                    {activeSuggestionIndex === idx && suggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-purple-200 rounded-md shadow-lg z-20 max-h-36 overflow-y-auto">
-                        <div className="p-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 px-2">
-                          Reusable Suggestions:
-                        </div>
-                        {suggestions.map((sug, sIdx) => (
-                          <div
-                            key={sIdx}
-                            onClick={() => applySuggestion(idx, sug)}
-                            className="px-2.5 py-1.5 hover:bg-purple-50 cursor-pointer transition-colors border-b border-neutral-50 last:border-none"
+                    {activeSuggestionIndex === idx && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-purple-200 rounded-md shadow-xl z-30 max-h-56 overflow-y-auto">
+                        <div className="p-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 px-2 flex justify-between items-center bg-purple-50/50">
+                          <span>Select Service Suggestion ({suggestions.filter(s => !item.title || s.title.toLowerCase().includes(item.title.toLowerCase())).length}):</span>
+                          <button 
+                            type="button" 
+                            onClick={(e) => { e.stopPropagation(); setActiveSuggestionIndex(null); }}
+                            className="text-neutral-400 hover:text-neutral-600 font-bold px-1"
                           >
-                            <div className="font-bold text-neutral-800 text-[11px]">{sug.title}</div>
-                            {sug.description && (
-                              <div className="text-[9px] text-neutral-500 truncate">{sug.description}</div>
-                            )}
+                            ✕
+                          </button>
+                        </div>
+                        {suggestions.filter(s => !item.title || s.title.toLowerCase().includes(item.title.toLowerCase())).length > 0 ? (
+                          suggestions
+                            .filter(s => !item.title || s.title.toLowerCase().includes(item.title.toLowerCase()))
+                            .map((sug, sIdx) => (
+                              <div
+                                key={sIdx}
+                                onMouseDown={(e) => { e.preventDefault(); applySuggestion(idx, sug); }}
+                                className="px-3 py-2 hover:bg-purple-50 cursor-pointer transition-colors border-b border-neutral-50 last:border-none"
+                              >
+                                <div className="font-bold text-[#8a32c6] text-[11px] flex items-center justify-between">
+                                  <span>{sug.title}</span>
+                                  <span className="text-[9px] font-semibold text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">Click to apply</span>
+                                </div>
+                                {sug.description && (
+                                  <div className="text-[9.5px] text-neutral-600 font-medium mt-0.5 line-clamp-2">{sug.description}</div>
+                                )}
+                              </div>
+                            ))
+                        ) : (
+                          <div className="p-3 text-center text-[10px] text-neutral-400 italic">
+                            No matching default service found. Type your custom title!
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
