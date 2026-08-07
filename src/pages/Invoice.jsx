@@ -225,9 +225,8 @@ const Invoice = () => {
       margin: 0,
       filename: `${saved.invoiceNumber}_${saved.clientName.replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'avoid-all' }
+      html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 790 },
+      jsPDF: { unit: 'pt', format: [790, 940], orientation: 'portrait' }
     };
 
     try {
@@ -763,107 +762,109 @@ const Invoice = () => {
                 ref={pdfRef}
                 style={{
                   width: '790px',
-                  minHeight: '940px',
+                  height: '920px',
+                  maxHeight: '920px',
                   background: '#ffffff',
                   color: '#2b1c40',
                   fontFamily: 'Montserrat, sans-serif',
-                  padding: '32px 36px',
+                  padding: '24px 30px',
                   position: 'relative',
                   boxSizing: 'border-box',
                   margin: '0 auto',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  overflow: 'hidden'
                 }}
               >
                 <div>
                   {/* ── Top Header Section ── */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                     {/* Top Left: Logo + Permanent Company Address Box */}
                     <div>
                       <img 
                         src={invoiceLogo} 
                         alt="Crevion Ads" 
-                        style={{ height: '56px', objectFit: 'contain', marginBottom: '10px' }}
+                        style={{ height: '48px', objectFit: 'contain', marginBottom: '8px' }}
                       />
                       
                       {/* Crevion Ads Permanent Address Details Box */}
                       <div style={{
                         border: '1.5px solid #d4c8e3',
-                        borderRadius: '8px',
-                        padding: '10px 12px',
-                        width: '250px',
-                        fontSize: '10px',
+                        borderRadius: '6px',
+                        padding: '8px 10px',
+                        width: '245px',
+                        fontSize: '9.5px',
                         color: '#4a3b60',
-                        lineHeight: '1.5'
+                        lineHeight: '1.4'
                       }}>
-                        <div style={{ fontWeight: '800', fontSize: '12px', color: '#2c1947', marginBottom: '3px' }}>
+                        <div style={{ fontWeight: '800', fontSize: '11px', color: '#2c1947', marginBottom: '2px' }}>
                           {companyDetails.name}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                          <FiPhone size={10} style={{ color: '#3c2269' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+                          <FiPhone size={9} style={{ color: '#3c2269' }} />
                           <span>{companyDetails.phone}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                          <FiMail size={10} style={{ color: '#3c2269' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+                          <FiMail size={9} style={{ color: '#3c2269' }} />
                           <span>{companyDetails.email}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                          <FiGlobe size={10} style={{ color: '#3c2269' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+                          <FiGlobe size={9} style={{ color: '#3c2269' }} />
                           <span>{companyDetails.website}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                          <FiMapPin size={10} style={{ color: '#3c2269', marginTop: '2px' }} />
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+                          <FiMapPin size={9} style={{ color: '#3c2269', marginTop: '2px' }} />
                           <span>{companyDetails.address}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Top Right: INVOICE title + Gold pill + Dates */}
-                    <div style={{ textAlign: 'right' }}>
-                      <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#3c2269', letterSpacing: '0.06em', margin: '0 0 4px 0', lineHeight: 1.1 }}>
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <div style={{ fontSize: '26px', fontWeight: '900', color: '#3c2269', letterSpacing: '0.06em', lineHeight: '1.2', marginBottom: '4px' }}>
                         INVOICE
-                      </h1>
+                      </div>
                       <div style={{ 
                         display: 'inline-block', 
                         background: '#f4ce41', 
                         color: '#2c1947', 
                         fontWeight: '800', 
-                        fontSize: '12px', 
-                        padding: '3px 12px', 
-                        borderRadius: '5px',
-                        marginBottom: '12px'
+                        fontSize: '11px', 
+                        padding: '2px 10px', 
+                        borderRadius: '4px',
+                        marginBottom: '10px'
                       }}>
                         {invoiceForm.invoiceNumber}
                       </div>
 
-                      <div style={{ fontSize: '10.5px', color: '#685980', lineHeight: '1.7' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px' }}>
+                      <div style={{ fontSize: '10px', color: '#685980', lineHeight: '1.6' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                           <span style={{ color: '#685980', fontWeight: '600' }}>Invoice Date</span>
-                          <span style={{ fontWeight: '700', color: '#2c1947', width: '85px' }}>: {invoiceForm.invoiceDate}</span>
+                          <span style={{ fontWeight: '700', color: '#2c1947', width: '80px' }}>: {invoiceForm.invoiceDate}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                           <span style={{ color: '#685980', fontWeight: '600' }}>Terms</span>
-                          <span style={{ fontWeight: '700', color: '#2c1947', width: '85px' }}>: {invoiceForm.terms}</span>
+                          <span style={{ fontWeight: '700', color: '#2c1947', width: '80px' }}>: {invoiceForm.terms}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                           <span style={{ color: '#685980', fontWeight: '600' }}>Due Date</span>
-                          <span style={{ fontWeight: '700', color: '#2c1947', width: '85px' }}>: {invoiceForm.dueDate}</span>
+                          <span style={{ fontWeight: '700', color: '#2c1947', width: '80px' }}>: {invoiceForm.dueDate}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ── Bill To Section ── */}
-                  <div style={{ marginBottom: '18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '800', color: '#3c2269', marginBottom: '6px' }}>
-                      <div style={{ width: '18px', height: '18px', borderRadius: '4px', background: '#3c2269', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FiUser size={11} />
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: '800', color: '#3c2269', marginBottom: '4px' }}>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#3c2269', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FiUser size={10} />
                       </div>
                       <span>Bill TO :</span>
                     </div>
-                    <div style={{ paddingLeft: '24px', fontSize: '11.5px', color: '#33234d', fontWeight: '600', lineHeight: '1.4' }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#2c1947' }}>{invoiceForm.clientName || 'Client Name'}</div>
+                    <div style={{ paddingLeft: '21px', fontSize: '10.5px', color: '#33234d', fontWeight: '600', lineHeight: '1.3' }}>
+                      <div style={{ fontSize: '11.5px', fontWeight: '800', color: '#2c1947' }}>{invoiceForm.clientName || 'Client Name'}</div>
                       {invoiceForm.clientPhone && <div>{invoiceForm.clientPhone}</div>}
                       {invoiceForm.clientEmail && <div>{invoiceForm.clientEmail}</div>}
                       {invoiceForm.clientAddress && <div>{invoiceForm.clientAddress}</div>}
@@ -873,45 +874,45 @@ const Invoice = () => {
                   {/* ── Line Items Table matching reference design ── */}
                   <div style={{
                     border: '1.5px solid #c9bddb',
-                    borderRadius: '10px',
+                    borderRadius: '8px',
                     overflow: 'hidden',
-                    marginBottom: '18px'
+                    marginBottom: '12px'
                   }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
                       <thead>
                         <tr style={{ background: '#3c2269', color: '#ffffff' }}>
-                          <th style={{ padding: '8px 10px', textAlign: 'center', width: '36px', fontWeight: '800' }}>#</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '800' }}>Description</th>
-                          <th style={{ padding: '8px 10px', textAlign: 'center', width: '75px', fontWeight: '800' }}>Quantity</th>
-                          <th style={{ padding: '8px 10px', textAlign: 'right', width: '85px', fontWeight: '800' }}>Rate</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'right', width: '95px', fontWeight: '800' }}>Amount</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'center', width: '32px', fontWeight: '800' }}>#</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: '800' }}>Description</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'center', width: '70px', fontWeight: '800' }}>Quantity</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'right', width: '80px', fontWeight: '800' }}>Rate</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right', width: '90px', fontWeight: '800' }}>Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {invoiceForm.items.map((item, idx) => (
                           <tr key={idx} style={{ borderBottom: idx < invoiceForm.items.length - 1 ? '1px solid #e0d8eb' : 'none' }}>
-                            <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top' }}>
+                            <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top' }}>
                               {idx + 1}
                             </td>
-                            <td style={{ padding: '8px 12px', verticalAlign: 'top' }}>
+                            <td style={{ padding: '6px 10px', verticalAlign: 'top' }}>
                               {/* Bold Title */}
-                              <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '11.5px', marginBottom: '2px' }}>
+                              <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '10.5px', marginBottom: '1px' }}>
                                 {item.title || 'Service Title'}
                               </div>
                               {/* Description below title */}
                               {item.description && (
-                                <div style={{ fontSize: '9.5px', color: '#685980', fontWeight: '500', lineHeight: '1.3' }}>
+                                <div style={{ fontSize: '9px', color: '#685980', fontWeight: '500', lineHeight: '1.25' }}>
                                   {item.description}
                                 </div>
                               )}
                             </td>
-                            <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top' }}>
+                            <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top' }}>
                               {item.quantity}
                             </td>
-                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top' }}>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top' }}>
                               ₹{Number(item.rate).toLocaleString()}
                             </td>
-                            <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#3c2269', verticalAlign: 'top' }}>
+                            <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#3c2269', verticalAlign: 'top' }}>
                               ₹{Number(item.amount).toLocaleString()}
                             </td>
                           </tr>
@@ -921,35 +922,35 @@ const Invoice = () => {
                   </div>
 
                   {/* ── Summary Totals Box Bottom Right ── */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-                    <div style={{ width: '300px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
+                    <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       
                       {/* TOTAL AMOUNT */}
-                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '5px', overflow: 'hidden' }}>
-                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '5px 10px', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '4px 8px', fontWeight: '800', fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           TOTAL AMOUNT
                         </div>
-                        <div style={{ padding: '5px 12px', background: '#ffffff', fontWeight: '800', fontSize: '11.5px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '90px', textAlign: 'right' }}>
+                        <div style={{ padding: '4px 10px', background: '#ffffff', fontWeight: '800', fontSize: '11px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '85px', textAlign: 'right' }}>
                           ₹{invoiceForm.totalAmount.toLocaleString()}
                         </div>
                       </div>
 
                       {/* RECEIVED AMOUNT */}
-                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '5px', overflow: 'hidden' }}>
-                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '5px 10px', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '4px 8px', fontWeight: '800', fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           RECEIVED AMOUNT
                         </div>
-                        <div style={{ padding: '5px 12px', background: '#ffffff', fontWeight: '800', fontSize: '11.5px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '90px', textAlign: 'right' }}>
+                        <div style={{ padding: '4px 10px', background: '#ffffff', fontWeight: '800', fontSize: '11px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '85px', textAlign: 'right' }}>
                           ₹{(Number(invoiceForm.receivedAmount) || 0).toLocaleString()}
                         </div>
                       </div>
 
                       {/* BALANCE DUE */}
-                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '5px', overflow: 'hidden' }}>
-                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '5px 10px', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <div style={{ display: 'flex', border: '1px solid #c9bddb', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: '#3c2269', color: '#ffffff', padding: '4px 8px', fontWeight: '800', fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           BALANCE DUE
                         </div>
-                        <div style={{ padding: '5px 12px', background: '#ffffff', fontWeight: '800', fontSize: '11.5px', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', minWidth: '90px', textAlign: 'right' }}>
+                        <div style={{ padding: '4px 10px', background: '#ffffff', fontWeight: '800', fontSize: '11px', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', minWidth: '85px', textAlign: 'right' }}>
                           ₹{invoiceForm.balanceDue.toLocaleString()}
                         </div>
                       </div>
@@ -961,32 +962,32 @@ const Invoice = () => {
                 {/* ── Bottom Thank You Footer Box matching reference design ── */}
                 <div style={{
                   border: '1.5px solid #d4c8e3',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: '10px',
                   background: '#ffffff',
                   marginTop: 'auto',
-                  marginBottom: '10px'
+                  marginBottom: '8px'
                 }}>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '28px',
+                    height: '28px',
                     borderRadius: '50%',
                     background: '#3c2269',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justify.content: 'center'
                   }}>
-                    <FiHeart size={16} />
+                    <FiHeart size={14} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#3c2269', lineHeight: '1.2' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '900', color: '#3c2269', lineHeight: '1.2' }}>
                       Thank You!
                     </div>
-                    <div style={{ fontSize: '10.5px', fontWeight: '600', color: '#685980' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '600', color: '#685980' }}>
                       For Your Business
                     </div>
                   </div>
@@ -998,7 +999,7 @@ const Invoice = () => {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: '12px',
+                  height: '10px',
                   background: '#3c2269',
                   borderBottomLeftRadius: '4px',
                   borderBottomRightRadius: '4px'
