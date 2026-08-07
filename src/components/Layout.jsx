@@ -8,6 +8,7 @@ import {
   FiUsers, 
   FiCalendar, 
   FiFileText, 
+  FiPrinter,
   FiSettings, 
   FiLogOut, 
   FiMenu, 
@@ -32,6 +33,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard',        path: '/',          icon: FiHome },
     { name: 'Business Numbers', path: '/business',  icon: FiBriefcase },
     { name: 'Expenses',         path: '/finance',   icon: FiDollarSign },
+    { name: 'Invoice Module',   path: '/invoice',   icon: FiPrinter },
     { name: 'Members',          path: '/members',   icon: FiUsers },
     { name: 'Leave Management', path: '/leaves',    icon: FiCalendar },
     { name: 'Reports',          path: '/reports',   icon: FiFileText },
@@ -147,13 +149,13 @@ const Layout = ({ children }) => {
       )}
 
       {/* --- Main Content --- */}
-      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: '#fefae0' }}>
+      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: '#faf8f5' }}>
         
         {/* Top Navbar */}
         <header
           className="hidden md:flex items-center justify-between px-7 py-3.5"
           style={{
-            background: '#fefae0',
+            background: '#faf8f5',
             borderBottom: '1px solid rgba(138, 50, 198, 0.1)',
           }}
         >
@@ -173,7 +175,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 md:p-8" style={{ background: '#fefae0' }}>
+        <main className="flex-1 p-6 md:p-8" style={{ background: '#faf8f5' }}>
           {children}
         </main>
       </div>

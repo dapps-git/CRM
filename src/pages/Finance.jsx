@@ -5,6 +5,7 @@ import {
   FiDollarSign, 
   FiPlus, 
   FiTrash2, 
+  FiEdit,
   FiFile,
   FiX
 } from 'react-icons/fi';
@@ -22,6 +23,8 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { isLettersOnly, isNumbersOnly, compressImageToWebP } from '../utils/validation';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Finance = () => {
   const [incomes, setIncomes] = useState([]);
@@ -35,6 +38,11 @@ const Finance = () => {
   // Modal open triggers
   const [incomeModalOpen, setIncomeModalOpen] = useState(false);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [editExpenseId, setEditExpenseId] = useState(null);
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'income'|'expense', id: '...' }
+  const [deleting, setDeleting] = useState(false);
 
   // Form states
   const [incomeForm, setIncomeForm] = useState({
@@ -59,6 +67,9 @@ const Finance = () => {
     billImage: null
   });
 
+  const [incomeTouched, setIncomeTouched] = useState({});
+  const [expenseTouched, setExpenseTouched] = useState({});
+
   const partners = ['Saleel VT', 'Anfas Sir', 'Shamna Madam', 'Sabith Boss'];
   const expenseCategories = [
     'Office', 'Travel', 'Food', 'Software', 'Hardware', 'Marketing', 'Salary', 'Utilities', 'Miscellaneous'
@@ -73,7 +84,7 @@ const Finance = () => {
       ]);
       setIncomes(incRes.data.incomes || []);
       setExpenses(expRes.data.expenses || []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load transaction data');
     } finally {
       setLoading(false);
@@ -87,11 +98,29 @@ const Finance = () => {
   const [submittingIncome, setSubmittingIncome] = useState(false);
   const [submittingExpense, setSubmittingExpense] = useState(false);
 
-  // Form submits
+  // Income Validation
+  const isIncomeSourceValid = incomeForm.source.trim() !== '' && isLettersOnly(incomeForm.source);
+  const isIncomeAmountValid = incomeForm.amount !== '' && Number(incomeForm.amount) > 0 && isNumbersOnly(incomeForm.amount);
+  const isIncomeFormValid = isIncomeSourceValid && isIncomeAmountValid;
+
+  // Expense Validation
+  const isExpenseReasonValid = expenseForm.reason.trim() !== '';
+  const isExpenseAmountValid = expenseForm.amount !== '' && Number(expenseForm.amount) > 0 && isNumbersOnly(expenseForm.amount);
+  const isExpenseFormValid = isExpenseReasonValid && isExpenseAmountValid;
+
+  // Handle Income submit with WebP image compression
   const handleIncomeSubmit = async (e) => {
     e.preventDefault();
     if (submittingIncome) return;
-    if (!incomeForm.amount || !incomeForm.source) return toast.error('Please enter amount and source');
+
+    if (!isIncomeSourceValid) {
+      toast.error('Source name must contain letters and spaces only');
+      return;
+    }
+    if (!isIncomeAmountValid) {
+      toast.error('Amount must be a positive number');
+      return;
+    }
 
     setSubmittingIncome(true);
     const formData = new FormData();
@@ -105,8 +134,12 @@ const Finance = () => {
       formData.append('commissionAgent', incomeForm.commissionAgent);
       formData.append('commissionAmount', incomeForm.commissionAmount);
     }
+    
     if (incomeForm.receiptImage) {
-      formData.append('receiptImage', incomeForm.receiptImage);
+      toast.loading('Compressing receipt image...', { id: 'img-comp' });
+      const compressedWebP = await compressImageToWebP(incomeForm.receiptImage);
+      toast.dismiss('img-comp');
+      formData.append('receiptImage', compressedWebP);
     }
 
     try {
@@ -125,6 +158,7 @@ const Finance = () => {
         commissionAmount: '',
         receiptImage: null
       });
+      setIncomeTouched({});
       setIncomeModalOpen(false);
       fetchFinanceData();
     } catch (err) {
@@ -134,10 +168,19 @@ const Finance = () => {
     }
   };
 
+  // Handle Expense Add / Edit with WebP image compression
   const handleExpenseSubmit = async (e) => {
     e.preventDefault();
     if (submittingExpense) return;
-    if (!expenseForm.amount || !expenseForm.reason) return toast.error('Please enter amount and reason');
+
+    if (!isExpenseReasonValid) {
+      toast.error('Reason / Purpose is required');
+      return;
+    }
+    if (!isExpenseAmountValid) {
+      toast.error('Amount must be a positive number');
+      return;
+    }
 
     setSubmittingExpense(true);
     const formData = new FormData();
@@ -147,41 +190,81 @@ const Finance = () => {
     formData.append('reason', expenseForm.reason);
     formData.append('description', expenseForm.description);
     formData.append('partner', expenseForm.partner);
+
     if (expenseForm.billImage) {
-      formData.append('billImage', expenseForm.billImage);
+      toast.loading('Compressing bill image...', { id: 'img-comp-exp' });
+      const compressedWebP = await compressImageToWebP(expenseForm.billImage);
+      toast.dismiss('img-comp-exp');
+      formData.append('billImage', compressedWebP);
     }
 
     try {
-      await api.post('/expense', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      toast.success('Expense transaction logged successfully');
-      setExpenseForm({
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        category: 'Office',
-        reason: '',
-        description: '',
-        partner: 'Saleel VT',
-        billImage: null
-      });
+      if (editExpenseId) {
+        await api.put(`/expense/${editExpenseId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Expense transaction updated successfully');
+      } else {
+        await api.post('/expense', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Expense transaction logged successfully');
+      }
+      resetExpenseForm();
       setExpenseModalOpen(false);
       fetchFinanceData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to log expense');
+      toast.error(err.response?.data?.message || 'Failed to save expense');
     } finally {
       setSubmittingExpense(false);
     }
   };
 
-  const handleDeleteTransaction = async (type, id) => {
-    if (!window.confirm('Delete this record permanently?')) return;
+  const openEditExpenseModal = (item) => {
+    setEditExpenseId(item._id);
+    setExpenseForm({
+      amount: item.amount || '',
+      date: item.date ? new Date(item.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      category: item.category || 'Office',
+      reason: item.reason || '',
+      description: item.description || '',
+      partner: item.partner || 'Saleel VT',
+      billImage: null
+    });
+    setExpenseTouched({});
+    setExpenseModalOpen(true);
+  };
+
+  const resetExpenseForm = () => {
+    setEditExpenseId(null);
+    setExpenseForm({
+      amount: '',
+      date: new Date().toISOString().split('T')[0],
+      category: 'Office',
+      reason: '',
+      description: '',
+      partner: 'Saleel VT',
+      billImage: null
+    });
+    setExpenseTouched({});
+  };
+
+  const confirmDelete = (type, id) => {
+    setDeleteTarget({ type, id });
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await api.delete(`/${type}/${id}`);
-      toast.success('Record removed');
+      await api.delete(`/${deleteTarget.type}/${deleteTarget.id}`);
+      toast.success(`${deleteTarget.type === 'income' ? 'Income' : 'Expense'} record removed`);
+      setDeleteTarget(null);
       fetchFinanceData();
     } catch {
       toast.error('Failed to delete transaction');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -236,26 +319,26 @@ const Finance = () => {
   /* ─── Shared Inputs ─── */
   const INPUT = {
     background: '#ffffff',
-    border: '1px solid rgba(138,50,198,0.18)',
-    borderRadius: '0.5rem',
-    color: 'var(--text-primary)',
-    fontSize: '12px',
+    border: '1px solid rgba(138,50,198,0.2)',
+    borderRadius: '6px',
+    color: '#2c2438',
+    fontSize: '11px',
     fontFamily: 'Montserrat, sans-serif',
     outline: 'none',
     width: '100%',
     padding: '7px 10px',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
+    transition: 'all 0.15s ease-in-out',
   };
-  const onFocus = e => { e.target.style.borderColor = '#8a32c6'; e.target.style.boxShadow = '0 0 0 3px rgba(138,50,198,0.15)'; };
-  const onBlur  = e => { e.target.style.borderColor = 'rgba(138,50,198,0.18)'; e.target.style.boxShadow = 'none'; };
+  const onFocus = e => { e.target.style.borderColor = '#8a32c6'; e.target.style.boxShadow = '0 0 0 2px rgba(138,50,198,0.12)'; };
+  const onBlur  = e => { e.target.style.borderColor = 'rgba(138,50,198,0.2)'; e.target.style.boxShadow = 'none'; };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
       {/* --- Page Header --- */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-sm font-bold text-neutral-800 uppercase tracking-wider">Expenses & Income</h1>
+          <h1 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Expenses & Income</h1>
           <p className="text-[10px] text-brand-600 font-semibold mt-0.5">
             Log, verify and track ledger inflow/outflow balances.
           </p>
@@ -263,17 +346,17 @@ const Finance = () => {
 
         <div className="flex items-center space-x-2 text-2xs font-bold">
           <button
-            onClick={() => setIncomeModalOpen(true)}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600 shadow-sm transition-colors"
+            onClick={() => { setIncomeTouched({}); setIncomeModalOpen(true); }}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 shadow-xs transition-colors"
           >
             <FiPlus size={11} />
             <span>+ Income</span>
           </button>
           <button
-            onClick={() => setExpenseModalOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', borderRadius: 6, background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', fontSize: 11, boxShadow: '0 3px 12px var(--primary-glow)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-light)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--primary)'}
+            onClick={() => { resetExpenseForm(); setExpenseModalOpen(true); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', borderRadius: 6, background: '#8a32c6', color: '#fff', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', fontSize: 11, fontWeight: 700, boxShadow: '0 2px 8px rgba(138,50,198,0.25)', border: 'none' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#7828b0'}
+            onMouseLeave={e => e.currentTarget.style.background = '#8a32c6'}
           >
             <FiPlus size={11} />
             <span>+ Expense</span>
@@ -281,49 +364,49 @@ const Finance = () => {
         </div>
       </div>
 
-      {/* --- Summary KPI Cards (Current Month focus) --- */}
+      {/* --- Summary KPI Cards --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Income Card */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl flex items-center justify-between shadow-sm">
+        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider block mb-1">
+            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
               Total Income (This Month)
             </span>
             <span className="text-sm font-extrabold text-neutral-800">
               ₹{statsIncome.toLocaleString()}
             </span>
           </div>
-          <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
+          <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-md">
             <FiTrendingUp size={16} />
           </div>
         </div>
 
         {/* Expense Card */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl flex items-center justify-between shadow-sm">
+        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider block mb-1">
+            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
               Total Expenses (This Month)
             </span>
             <span className="text-sm font-extrabold text-neutral-800">
               ₹{statsExpense.toLocaleString()}
             </span>
           </div>
-          <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
+          <div className="p-2 bg-rose-500/10 text-rose-600 rounded-md">
             <FiTrendingDown size={16} />
           </div>
         </div>
 
         {/* Net Profit Card */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl flex items-center justify-between shadow-sm">
+        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider block mb-1">
+            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
               Net Profit (This Month)
             </span>
-            <span className={`text-sm font-extrabold ${statsNet >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <span className={`text-sm font-extrabold ${statsNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               ₹{statsNet.toLocaleString()}
             </span>
           </div>
-          <div className="p-2 bg-brand-50/15 text-brand-600 rounded-lg">
+          <div className="p-2 bg-[#8a32c6]/10 text-[#8a32c6] rounded-md">
             <FiDollarSign size={16} />
           </div>
         </div>
@@ -332,8 +415,8 @@ const Finance = () => {
       {/* --- Charts Section --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Chart 1: Partner Expenses Bar Chart */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
-          <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-4 border-b border-neutral-50 pb-2">
+        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg shadow-xs">
+          <h3 className="text-2xs font-extrabold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">
             Partner Expense Share
           </h3>
           <div className="h-44">
@@ -353,8 +436,8 @@ const Finance = () => {
         </div>
 
         {/* Chart 2: Category Distribution Pie Chart */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
-          <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-4 border-b border-neutral-50 pb-2">
+        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg shadow-xs">
+          <h3 className="text-2xs font-extrabold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">
             Expense Distribution
           </h3>
           <div className="h-44 flex items-center justify-around">
@@ -374,7 +457,7 @@ const Finance = () => {
                           <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e3de', borderRadius: 8, fontSize: 10 }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e3de', borderRadius: 6, fontSize: 10 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -398,7 +481,7 @@ const Finance = () => {
       </div>
 
       {/* --- Filter Inputs for Tables --- */}
-      <div className="flex flex-wrap items-center gap-3 mt-8">
+      <div className="flex flex-wrap items-center gap-3 mt-6">
         <select
           value={selectedPartner}
           onChange={(e) => setSelectedPartner(e.target.value)}
@@ -431,10 +514,10 @@ const Finance = () => {
       </div>
 
       {/* --- Expense Records Ledger Table --- */}
-      <div className="bg-white border border-neutral-100 rounded-xl overflow-hidden mt-2 shadow-sm">
-        <div className="p-3 bg-brand-50/20 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-2xs font-extrabold text-brand-600 uppercase tracking-widest">All Expenses</h2>
-          <span className="text-[10px] text-neutral-500 font-mono font-semibold">
+      <div className="bg-white border border-neutral-200/60 rounded-lg overflow-hidden mt-2 shadow-xs">
+        <div className="p-3 bg-purple-50/40 border-b border-neutral-100 flex items-center justify-between">
+          <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">All Expenses</h2>
+          <span className="text-[10px] text-neutral-600 font-mono font-semibold">
             Outflow Total: ₹{filteredExpenses.reduce((s, e) => s + e.amount, 0).toLocaleString()}
           </span>
         </div>
@@ -454,12 +537,12 @@ const Finance = () => {
             <tbody className="divide-y divide-neutral-100">
               {filteredExpenses.length > 0 ? (
                 filteredExpenses.map(item => (
-                  <tr key={item._id} className="hover:bg-neutral-50/30 text-neutral-700 font-medium transition-colors">
+                  <tr key={item._id} className="hover:bg-neutral-50/50 text-neutral-700 font-medium transition-colors">
                     <td className="py-2.5 px-3 font-mono text-neutral-500">{(() => { const d = new Date(item.date); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })()}</td>
                     <td className="py-2.5 px-3 text-neutral-800 font-semibold">{item.partner}</td>
                     <td className="py-2.5 px-3 truncate max-w-[150px]">{item.reason}</td>
                     <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded-full text-[9px] bg-neutral-100 border border-neutral-200 text-neutral-600 font-semibold uppercase">
+                      <span className="px-2 py-0.5 rounded text-[9px] bg-neutral-100 border border-neutral-200 text-neutral-600 font-semibold uppercase">
                         {item.category}
                       </span>
                     </td>
@@ -467,16 +550,24 @@ const Finance = () => {
                     <td className="py-2.5 px-3 text-right">
                       <div className="inline-flex items-center space-x-2">
                         {item.billImage && (
-                          <a href={item.billImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1.5 text-brand-600 hover:text-brand-700 p-1" title="View Bill Document">
-                            <img src={item.billImage} alt="Bill" className="w-8 h-8 object-cover rounded border border-neutral-200 shadow-sm" />
+                          <a href={item.billImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-[#8a32c6] hover:text-[#7828b0] p-1" title="View Bill Document">
+                            <img src={item.billImage} alt="Bill" className="w-7 h-7 object-cover rounded border border-neutral-200 shadow-xs" />
                             <FiFile size={12} />
                           </a>
                         )}
                         <button
-                          onClick={() => handleDeleteTransaction('expense', item._id)}
-                          className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
+                          onClick={() => openEditExpenseModal(item)}
+                          className="text-[#8a32c6] hover:text-[#7828b0] transition-colors p-1"
+                          title="Edit Expense"
                         >
-                          <FiTrash2 size={12} />
+                          <FiEdit size={13} />
+                        </button>
+                        <button
+                          onClick={() => confirmDelete('expense', item._id)}
+                          className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
+                          title="Delete Expense"
+                        >
+                          <FiTrash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -493,10 +584,10 @@ const Finance = () => {
       </div>
 
       {/* --- Income Records Ledger Table --- */}
-      <div className="bg-white border border-neutral-100 rounded-xl overflow-hidden mt-6 shadow-sm">
-        <div className="p-3 bg-brand-50/20 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-2xs font-extrabold text-brand-600 uppercase tracking-widest">Income Records</h2>
-          <span className="text-[10px] text-neutral-500 font-mono font-semibold">
+      <div className="bg-white border border-neutral-200/60 rounded-lg overflow-hidden mt-6 shadow-xs">
+        <div className="p-3 bg-purple-50/40 border-b border-neutral-100 flex items-center justify-between">
+          <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">Income Records</h2>
+          <span className="text-[10px] text-neutral-600 font-mono font-semibold">
             Inflow Total: ₹{filteredIncomes.reduce((s, i) => s + i.amount, 0).toLocaleString()}
           </span>
         </div>
@@ -514,26 +605,27 @@ const Finance = () => {
             <tbody className="divide-y divide-neutral-100">
               {filteredIncomes.length > 0 ? (
                 filteredIncomes.map(item => (
-                  <tr key={item._id} className="hover:bg-neutral-50/30 text-neutral-700 font-medium transition-colors">
+                  <tr key={item._id} className="hover:bg-neutral-50/50 text-neutral-700 font-medium transition-colors">
                     <td className="py-2.5 px-3 font-mono text-neutral-500">{(() => { const d = new Date(item.date); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })()}</td>
                     <td className="py-2.5 px-3 text-neutral-800 font-semibold">
                       <div>{item.source}</div>
-                      {item.businessName && <span className="text-[9px] text-brand-500 font-mono">{item.businessName}</span>}
+                      {item.businessName && <span className="text-[9px] text-[#8a32c6] font-mono">{item.businessName}</span>}
                     </td>
                     <td className="py-2.5 px-3 font-bold font-mono text-emerald-600">₹{item.amount.toLocaleString()}</td>
                     <td className="py-2.5 px-3 text-right">
                       <div className="inline-flex items-center space-x-2">
                         {item.receiptImage && (
-                          <a href={item.receiptImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1.5 text-brand-600 hover:text-brand-700 p-1" title="View Receipt Document">
-                            <img src={item.receiptImage} alt="Receipt" className="w-8 h-8 object-cover rounded border border-neutral-200 shadow-sm" />
+                          <a href={item.receiptImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-[#8a32c6] hover:text-[#7828b0] p-1" title="View Receipt Document">
+                            <img src={item.receiptImage} alt="Receipt" className="w-7 h-7 object-cover rounded border border-neutral-200 shadow-xs" />
                             <FiFile size={12} />
                           </a>
                         )}
                         <button
-                          onClick={() => handleDeleteTransaction('income', item._id)}
+                          onClick={() => confirmDelete('income', item._id)}
                           className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
+                          title="Delete Income"
                         >
-                          <FiTrash2 size={12} />
+                          <FiTrash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -551,32 +643,40 @@ const Finance = () => {
 
       {/* --- ADD INCOME MODAL --- */}
       {incomeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white border border-neutral-100 rounded-xl p-6 shadow-2xl relative animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-lg p-5 shadow-xl relative">
             <button
               onClick={() => setIncomeModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded hover:bg-neutral-50 text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="absolute right-3 top-3 p-1 rounded text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              <FiX size={15} />
+              <FiX size={16} />
             </button>
-            <h3 className="text-xs font-bold text-brand-600 uppercase tracking-widest mb-4">Log New Inflow</h3>
+            <h3 className="text-xs font-bold text-[#8a32c6] uppercase tracking-widest mb-4">Log New Inflow</h3>
             
-            <form onSubmit={handleIncomeSubmit} className="space-y-3.5 text-2xs font-semibold">
+            <form onSubmit={handleIncomeSubmit} className="space-y-3 text-2xs font-semibold">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Amount (₹)*</label>
                   <input 
-                    type="number" required value={incomeForm.amount}
+                    type="text" 
+                    required 
+                    value={incomeForm.amount}
                     onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })}
-                    style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
+                    onBlur={() => setIncomeTouched({ ...incomeTouched, amount: true })}
+                    placeholder="5000"
+                    style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace', borderColor: (incomeTouched.amount && !isIncomeAmountValid) ? '#ef4444' : INPUT.border }}
                     onFocus={onFocus}
-                    onBlur={onBlur}
                   />
+                  {incomeTouched.amount && !isIncomeAmountValid && (
+                    <span className="text-[9px] text-rose-500 block font-normal">Numbers only</span>
+                  )}
                 </div>
                 <div>
                   <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Date*</label>
                   <input 
-                    type="date" required value={incomeForm.date}
+                    type="date" 
+                    required 
+                    value={incomeForm.date}
                     onChange={(e) => setIncomeForm({ ...incomeForm, date: e.target.value })}
                     style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
                     onFocus={onFocus}
@@ -588,12 +688,18 @@ const Finance = () => {
               <div>
                 <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Source (Company / Client)*</label>
                 <input 
-                  type="text" required placeholder="Acme Corp" value={incomeForm.source}
+                  type="text" 
+                  required 
+                  placeholder="Acme Corp (Letters only)" 
+                  value={incomeForm.source}
                   onChange={(e) => setIncomeForm({ ...incomeForm, source: e.target.value })}
-                  style={INPUT}
+                  onBlur={() => setIncomeTouched({ ...incomeTouched, source: true })}
+                  style={{ ...INPUT, borderColor: (incomeTouched.source && !isIncomeSourceValid) ? '#ef4444' : INPUT.border }}
                   onFocus={onFocus}
-                  onBlur={onBlur}
                 />
+                {incomeTouched.source && !isIncomeSourceValid && (
+                  <span className="text-[9px] text-rose-500 block font-normal">Letters and spaces only</span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -624,27 +730,28 @@ const Finance = () => {
               </div>
 
               <div>
-                <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Receipt Document</label>
+                <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Receipt Document (Auto-WebP)</label>
                 <input 
                   type="file"
+                  accept="image/*"
                   onChange={(e) => setIncomeForm({ ...incomeForm, receiptImage: e.target.files[0] })}
-                  className="w-full text-neutral-500 font-semibold"
+                  className="w-full text-neutral-500 font-semibold text-[10px]"
                 />
               </div>
 
               {/* Commission toggle */}
-              <div className="border border-neutral-100 p-2.5 rounded bg-neutral-50/50">
-                <label className="flex items-center space-x-2 cursor-pointer mb-1.5">
+              <div className="border border-neutral-200 p-2.5 rounded-md bg-neutral-50/50">
+                <label className="flex items-center space-x-2 cursor-pointer mb-1">
                   <input 
                     type="checkbox" checked={incomeForm.commissionEnabled}
                     onChange={(e) => setIncomeForm({ ...incomeForm, commissionEnabled: e.target.checked })}
-                    className="rounded border-neutral-200 text-brand-600 focus:ring-brand-500"
+                    className="rounded border-neutral-300 text-[#8a32c6] focus:ring-[#8a32c6]"
                   />
-                  <span className="font-bold text-neutral-600">Log Agent Commission</span>
+                  <span className="font-bold text-neutral-700 text-[11px]">Log Agent Commission</span>
                 </label>
 
                 {incomeForm.commissionEnabled && (
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="grid grid-cols-2 gap-2 pt-1.5">
                     <input 
                       type="text" placeholder="Agent Name" value={incomeForm.commissionAgent}
                       onChange={(e) => setIncomeForm({ ...incomeForm, commissionAgent: e.target.value })}
@@ -666,14 +773,18 @@ const Finance = () => {
               <div className="flex space-x-3 pt-2">
                 <button
                   type="button" onClick={() => setIncomeModalOpen(false)}
-                  className="flex-1 py-2 bg-neutral-50 hover:bg-neutral-100 rounded text-neutral-600 font-bold uppercase transition-colors"
+                  className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-md text-neutral-700 font-bold uppercase transition-colors text-[10px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingIncome}
-                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20 flex items-center justify-center space-x-2"
+                  disabled={!isIncomeFormValid || submittingIncome}
+                  style={{
+                    background: isIncomeFormValid ? '#8a32c6' : '#cccccc',
+                    cursor: (isIncomeFormValid && !submittingIncome) ? 'pointer' : 'not-allowed'
+                  }}
+                  className="flex-1 py-2 text-white font-bold uppercase transition-colors rounded-md text-[10px] flex items-center justify-center space-x-1"
                 >
                   {submittingIncome ? (
                     <>
@@ -690,34 +801,44 @@ const Finance = () => {
         </div>
       )}
 
-      {/* --- ADD EXPENSE MODAL --- */}
+      {/* --- ADD / EDIT EXPENSE MODAL --- */}
       {expenseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white border border-neutral-100 rounded-xl p-6 shadow-2xl relative animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-lg p-5 shadow-xl relative">
             <button
-              onClick={() => setExpenseModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded hover:bg-neutral-50 text-neutral-400 hover:text-neutral-600 transition-colors"
+              onClick={() => { setExpenseModalOpen(false); resetExpenseForm(); }}
+              className="absolute right-3 top-3 p-1 rounded text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              <FiX size={15} />
+              <FiX size={16} />
             </button>
-            <h3 className="text-xs font-bold text-brand-600 uppercase tracking-widest mb-4">Log New Outflow</h3>
+            <h3 className="text-xs font-bold text-[#8a32c6] uppercase tracking-widest mb-4">
+              {editExpenseId ? 'Edit Outflow Expense' : 'Log New Outflow'}
+            </h3>
             
-            <form onSubmit={handleExpenseSubmit} className="space-y-3.5 text-2xs font-semibold">
+            <form onSubmit={handleExpenseSubmit} className="space-y-3 text-2xs font-semibold">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Amount (₹)*</label>
                   <input 
-                    type="number" required value={expenseForm.amount}
+                    type="text" 
+                    required 
+                    value={expenseForm.amount}
                     onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                    style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
+                    onBlur={() => setExpenseTouched({ ...expenseTouched, amount: true })}
+                    placeholder="1500"
+                    style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace', borderColor: (expenseTouched.amount && !isExpenseAmountValid) ? '#ef4444' : INPUT.border }}
                     onFocus={onFocus}
-                    onBlur={onBlur}
                   />
+                  {expenseTouched.amount && !isExpenseAmountValid && (
+                    <span className="text-[9px] text-rose-500 block font-normal">Numbers only</span>
+                  )}
                 </div>
                 <div>
                   <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Date*</label>
                   <input 
-                    type="date" required value={expenseForm.date}
+                    type="date" 
+                    required 
+                    value={expenseForm.date}
                     onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
                     style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
                     onFocus={onFocus}
@@ -760,34 +881,46 @@ const Finance = () => {
               <div>
                 <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Reason / Purpose*</label>
                 <input 
-                  type="text" required placeholder="Office rent, supplies, hardware" value={expenseForm.reason}
+                  type="text" 
+                  required 
+                  placeholder="Office rent, supplies, hardware" 
+                  value={expenseForm.reason}
                   onChange={(e) => setExpenseForm({ ...expenseForm, reason: e.target.value })}
-                  style={INPUT}
+                  onBlur={() => setExpenseTouched({ ...expenseTouched, reason: true })}
+                  style={{ ...INPUT, borderColor: (expenseTouched.reason && !isExpenseReasonValid) ? '#ef4444' : INPUT.border }}
                   onFocus={onFocus}
-                  onBlur={onBlur}
                 />
+                {expenseTouched.reason && !isExpenseReasonValid && (
+                  <span className="text-[9px] text-rose-500 block font-normal">Reason is required</span>
+                )}
               </div>
 
               <div>
-                <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Bill Document</label>
+                <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Bill Document (Auto-WebP)</label>
                 <input 
                   type="file"
+                  accept="image/*"
                   onChange={(e) => setExpenseForm({ ...expenseForm, billImage: e.target.files[0] })}
-                  className="w-full text-neutral-500 font-semibold"
+                  className="w-full text-neutral-500 font-semibold text-[10px]"
                 />
               </div>
 
               <div className="flex space-x-3 pt-2">
                 <button
-                  type="button" onClick={() => setExpenseModalOpen(false)}
-                  className="flex-1 py-2 bg-neutral-50 hover:bg-neutral-100 rounded text-neutral-600 font-bold uppercase transition-colors"
+                  type="button" 
+                  onClick={() => { setExpenseModalOpen(false); resetExpenseForm(); }}
+                  className="flex-1 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-md text-neutral-700 font-bold uppercase transition-colors text-[10px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingExpense}
-                  className="flex-1 py-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase transition-colors rounded shadow shadow-brand-500/20 flex items-center justify-center space-x-2"
+                  disabled={!isExpenseFormValid || submittingExpense}
+                  style={{
+                    background: isExpenseFormValid ? '#8a32c6' : '#cccccc',
+                    cursor: (isExpenseFormValid && !submittingExpense) ? 'pointer' : 'not-allowed'
+                  }}
+                  className="flex-1 py-2 text-white font-bold uppercase transition-colors rounded-md text-[10px] flex items-center justify-center space-x-1"
                 >
                   {submittingExpense ? (
                     <>
@@ -795,7 +928,7 @@ const Finance = () => {
                       <span>Saving...</span>
                     </>
                   ) : (
-                    <span>Log Expense</span>
+                    <span>{editExpenseId ? 'Update Expense' : 'Log Expense'}</span>
                   )}
                 </button>
               </div>
@@ -803,6 +936,17 @@ const Finance = () => {
           </div>
         </div>
       )}
+
+      {/* --- Confirmation Delete Modal --- */}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteTransaction}
+        title={`Delete ${deleteTarget?.type === 'income' ? 'Income' : 'Expense'} Record`}
+        message="Are you sure you want to remove this transaction record permanently? This cannot be undone."
+        confirmText="Remove Record"
+        loading={deleting}
+      />
 
     </div>
   );

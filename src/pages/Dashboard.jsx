@@ -191,7 +191,7 @@ const Dashboard = () => {
         {kpis.map((kpi, idx) => (
           <div
             key={idx}
-            className="p-4 rounded-xl flex flex-col justify-between shadow-sm border border-neutral-100 bg-white hover:shadow-md transition-all duration-200"
+            className="p-4 rounded-lg flex flex-col justify-between shadow-sm border border-neutral-100 bg-white hover:shadow-md transition-all duration-200"
           >
             <div className="flex items-center justify-between">
               <span className="text-[9px] uppercase tracking-wider font-bold text-neutral-400">{kpi.label}</span>
@@ -217,7 +217,7 @@ const Dashboard = () => {
       {/* Row 1: Income vs Expense Trend & Mini Calendar */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Income vs Expense Area Chart */}
-        <div className="xl:col-span-2 bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="xl:col-span-2 bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-4 border-b border-neutral-50 pb-2">Income vs Expense Trend</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -245,7 +245,7 @@ const Dashboard = () => {
         </div>
 
         {/* Mini Calendar Widget */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <div className="flex items-center space-x-2 text-neutral-800 mb-4 border-b border-neutral-50 pb-2">
             <FiCalendar className="text-brand-500" size={13} />
             <h4 className="font-bold text-2xs font-sans tracking-widest uppercase">{currentMonthName} {currentYear}</h4>
@@ -276,7 +276,7 @@ const Dashboard = () => {
       {/* Row 2: Category Breakdowns & Partner Contribution */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Net Profit & Loss Area Chart */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-4 border-b border-neutral-50 pb-2">Profit & Loss Curve</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -298,7 +298,7 @@ const Dashboard = () => {
         </div>
 
         {/* Expense Categories Breakdown */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-4 border-b border-neutral-50 pb-2">Expense Categories</h3>
           <div className="h-48 flex flex-col justify-center">
             {expenseBreakdown.length > 0 ? (
@@ -340,7 +340,7 @@ const Dashboard = () => {
         </div>
 
         {/* Partner breakdowns */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-4 border-b border-neutral-50 pb-2">Partner Contribution Ledger</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -360,7 +360,7 @@ const Dashboard = () => {
       {/* Row 3: Activity Timeline & Recent Tables */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Recent leads table */}
-        <div className="xl:col-span-2 bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="xl:col-span-2 bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-3 border-b border-neutral-50 pb-2">Recent Leads</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-2xs border-collapse">
@@ -399,7 +399,7 @@ const Dashboard = () => {
         </div>
 
         {/* Activity Timeline logs */}
-        <div className="bg-white border border-neutral-100 p-4 rounded-xl shadow-sm">
+        <div className="bg-white border border-neutral-100 p-4 rounded-lg shadow-sm">
           <h3 className="text-2xs font-extrabold text-neutral-400 uppercase tracking-widest mb-3 border-b border-neutral-50 pb-2">Recent Cash Activities</h3>
           <div className="space-y-3">
             {recent.income.slice(0, 3).map((item) => (

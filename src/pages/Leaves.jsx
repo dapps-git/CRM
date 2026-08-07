@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiCalendar, FiChevronLeft, FiChevronRight, FiPlus, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Leaves = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -101,14 +102,25 @@ const Leaves = () => {
   };
 
   // Delete Leave Record
-  const handleDeleteLeave = async (id) => {
-    if (!window.confirm('Delete this leave record?')) return;
+  const [deleteLeaveId, setDeleteLeaveId] = useState(null);
+  const [deletingLeave, setDeletingLeave] = useState(false);
+
+  const confirmDeleteLeave = (id) => {
+    setDeleteLeaveId(id);
+  };
+
+  const handleDeleteLeave = async () => {
+    if (!deleteLeaveId) return;
+    setDeletingLeave(true);
     try {
-      await api.delete(`/leave/${id}`);
+      await api.delete(`/leave/${deleteLeaveId}`);
       toast.success('Leave record deleted');
+      setDeleteLeaveId(null);
       fetchData();
     } catch (err) {
       toast.error('Failed to delete leave record');
+    } finally {
+      setDeletingLeave(false);
     }
   };
 
@@ -299,7 +311,7 @@ const Leaves = () => {
                               <FiEdit2 size={12} />
                             </button>
                             <button
-                              onClick={() => handleDeleteLeave(item._id)}
+                              onClick={() => confirmDeleteLeave(item._id)}
                               className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
                               title="Delete Record"
                             >
@@ -440,6 +452,17 @@ const Leaves = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Delete Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteLeaveId)}
+        onClose={() => setDeleteLeaveId(null)}
+        onConfirm={handleDeleteLeave}
+        title="Delete Leave Record"
+        message="Are you sure you want to remove this leave attendance record? This action cannot be undone."
+        confirmText="Remove Record"
+        loading={deletingLeave}
+      />
 
     </div>
   );

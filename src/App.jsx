@@ -16,6 +16,7 @@ import Members from './pages/Members';
 import Leaves from './pages/Leaves';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Invoice from './pages/Invoice';
 
 // Protected Route — checks if user is logged in
 const ProtectedRoute = ({ children }) => {
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ children }) => {
   if (loading) {
     return (
       <div
-        style={{ minHeight: '100vh', background: '#fefae0' }}
+        style={{ minHeight: '100vh', background: '#faf8f5' }}
         className="flex items-center justify-center"
       >
         <div className="w-8 h-8 rounded-full border-2 border-[#8a32c6] border-t-transparent animate-spin" />
@@ -64,6 +65,7 @@ const App = () => {
           <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/business" element={<ProtectedRoute><Layout><Business /></Layout></ProtectedRoute>} />
           <Route path="/finance" element={<ProtectedRoute><Layout><Finance /></Layout></ProtectedRoute>} />
+          <Route path="/invoice" element={<ProtectedRoute><Layout><Invoice /></Layout></ProtectedRoute>} />
           <Route path="/members" element={<ProtectedRoute><Layout><Members /></Layout></ProtectedRoute>} />
           <Route path="/leaves" element={<ProtectedRoute><Layout><Leaves /></Layout></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
