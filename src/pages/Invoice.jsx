@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FiFileText, FiPlus, FiTrash2, FiEdit, FiDownload, 
-  FiSearch, FiX, FiCheck, FiPrinter, FiEdit3, FiPhone, FiMail, FiGlobe, FiMapPin, FiHeart, FiUser 
+import {
+  FiFileText, FiPlus, FiTrash2, FiEdit, FiDownload,
+  FiSearch, FiX, FiCheck, FiPrinter, FiEdit3, FiPhone, FiMail, FiGlobe, FiMapPin, FiHeart, FiUser
 } from 'react-icons/fi';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -9,6 +9,43 @@ import logoImg from '../assets/logo.png';
 import invoiceLogo from '../assets/invoicelogo.webp';
 import ConfirmModal from '../components/ConfirmModal';
 import html2pdf from 'html2pdf.js';
+
+// Crisp SVG Data URIs for 100% html2canvas Icon Line Alignment
+const iconPhoneSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+const iconMailSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+const iconGlobeSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+const iconMapPinSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+const iconUserSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+// Crisp SVG Data URI generator for Gold Invoice Number Badge
+const generateInvoiceBadgeSVG = (invNum) => {
+  const text = invNum || 'INV-0001';
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="24" viewBox="0 0 96 24"><rect width="96" height="24" rx="5" fill="%23f4ce41"/><text x="48" y="16.5" font-family="Montserrat, sans-serif" font-weight="800" font-size="11" fill="%232b1947" text-anchor="middle">${text}</text></svg>`;
+};
+
+// Crisp SVG Data URI generator for Balance Due Badge (Guarantees non-empty, 100% visible red badge in html2canvas)
+const generateBalanceDueBadgeSVG = (amount) => {
+  const formatted = (Number(amount) || 0).toLocaleString();
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="26" viewBox="0 0 180 26"><rect width="180" height="26" rx="6" fill="%23fee2e2" stroke="%23fca5a5" stroke-width="1.2"/><text x="12" y="17" font-family="Montserrat, sans-serif" font-weight="700" font-size="11" fill="%23991b1b">Balance Due :</text><text x="168" y="17" font-family="Montserrat, sans-serif" font-weight="800" font-size="12" fill="%23dc2626" text-anchor="end">₹${formatted}</text></svg>`;
+};
+
+// Crisp SVG Data URI generator for Address Line (Locked icon + text image line guarantees 100% dead-center icon alignment in html2canvas)
+const generateAddressLineSVG = (iconType, text) => {
+  if (!text) return '';
+  let iconPath = '';
+  if (iconType === 'phone') {
+    iconPath = `<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>`;
+  } else if (iconType === 'email') {
+    iconPath = `<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>`;
+  } else if (iconType === 'website') {
+    iconPath = `<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/>`;
+  } else if (iconType === 'address') {
+    iconPath = `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>`;
+  }
+
+  const encodedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="22" viewBox="0 0 240 22"><g transform="translate(0, 2) scale(0.65)" fill="none" stroke="%232b1947" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</g><text x="24" y="15" font-family="Montserrat, sans-serif" font-weight="400" font-size="10.5" fill="%232b1947">${encodedText}</text></svg>`;
+};
 
 const Invoice = () => {
   const [activeTab, setActiveTab] = useState('list'); // 'list' | 'editor'
@@ -93,7 +130,7 @@ const Invoice = () => {
         });
         setSuggestions(merged);
       }
-      
+
       // Auto-generate invoice number if new
       if (!editingInvoiceId) {
         const nextNum = (invRes.data?.total || 0) + 1;
@@ -191,6 +228,11 @@ const Invoice = () => {
       return null;
     }
 
+    if (invoiceForm.clientPhone && invoiceForm.clientPhone.replace(/\D/g, '').length !== 10) {
+      toast.error('Client phone number must be exactly 10 digits');
+      return null;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -221,12 +263,22 @@ const Invoice = () => {
 
     toast.loading('Generating invoice PDF...', { id: 'pdf-gen' });
 
+    window.scrollTo(0, 0);
+
     const opt = {
       margin: 0,
       filename: `${saved.invoiceNumber}_${saved.clientName.replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 790,
+        width: 790
+      },
+      jsPDF: { unit: 'px', format: [790, 1050], orientation: 'portrait' }
     };
 
     try {
@@ -313,11 +365,11 @@ const Invoice = () => {
     transition: 'all 0.15s ease-in-out',
   };
   const onFocus = e => { e.target.style.borderColor = '#8a32c6'; e.target.style.boxShadow = '0 0 0 2px rgba(138,50,198,0.12)'; };
-  const onBlur  = e => { e.target.style.borderColor = 'rgba(138,50,198,0.2)'; e.target.style.boxShadow = 'none'; };
+  const onBlur = e => { e.target.style.borderColor = 'rgba(138,50,198,0.2)'; e.target.style.boxShadow = 'none'; };
 
   return (
     <div className="space-y-6" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-      
+
       {/* ── Page Header & Tabs Bar ── */}
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div>
@@ -331,17 +383,15 @@ const Invoice = () => {
           <div className="bg-white border border-neutral-200 p-0.5 rounded-md flex space-x-1">
             <button
               onClick={() => setActiveTab('list')}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${
-                activeTab === 'list' ? 'bg-[#8a32c6] text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-50'
-              }`}
+              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${activeTab === 'list' ? 'bg-[#8a32c6] text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-50'
+                }`}
             >
               All Clients & Invoices ({invoices.length})
             </button>
             <button
               onClick={() => setActiveTab('editor')}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${
-                activeTab === 'editor' ? 'bg-[#8a32c6] text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-50'
-              }`}
+              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${activeTab === 'editor' ? 'bg-[#8a32c6] text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-50'
+                }`}
             >
               {editingInvoiceId ? 'Edit Invoice' : 'Create Invoice'}
             </button>
@@ -513,7 +563,7 @@ const Invoice = () => {
             {/* Client Info */}
             <div className="border-t border-neutral-100 pt-3 space-y-2 text-2xs font-semibold">
               <h3 className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Bill To (Client Information)</h3>
-              
+
               <div>
                 <label className="block text-neutral-500 mb-1">Client Name*</label>
                 <input
@@ -530,12 +580,16 @@ const Invoice = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-neutral-500 mb-1">Phone</label>
+                  <label className="block text-neutral-500 mb-1">Phone (10 Digits)</label>
                   <input
-                    type="text"
-                    placeholder="+91 9876543210"
+                    type="tel"
+                    maxLength={10}
+                    placeholder="9876543210"
                     value={invoiceForm.clientPhone}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, clientPhone: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setInvoiceForm({ ...invoiceForm, clientPhone: val });
+                    }}
                     style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
                     onFocus={onFocus}
                     onBlur={onBlur}
@@ -611,8 +665,8 @@ const Invoice = () => {
                       <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-purple-200 rounded-md shadow-xl z-30 max-h-56 overflow-y-auto">
                         <div className="p-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 px-2 flex justify-between items-center bg-purple-50/50">
                           <span>Select Service Suggestion ({suggestions.filter(s => !item.title || s.title.toLowerCase().includes(item.title.toLowerCase())).length}):</span>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={(e) => { e.stopPropagation(); setActiveSuggestionIndex(null); }}
                             className="text-neutral-400 hover:text-neutral-600 font-bold px-1"
                           >
@@ -759,16 +813,19 @@ const Invoice = () => {
             {/* Outer container for PDF snapshot matching reference invoice.png */}
             <div className="bg-neutral-200 p-3 rounded-lg overflow-x-auto">
               <div
+                id="pdf-invoice-print-area"
                 ref={pdfRef}
                 style={{
                   width: '790px',
+                  minHeight: '1050px',
                   background: '#2b1947',
                   color: '#2b1c40',
                   fontFamily: 'Montserrat, sans-serif',
                   position: 'relative',
                   boxSizing: 'border-box',
                   margin: '0 auto',
-                  overflow: 'hidden'
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}
               >
                 {/* ── TOP SECTION (White Background) ── */}
@@ -777,150 +834,89 @@ const Invoice = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                     {/* Top Left: Logo + Permanent Company Address Box */}
                     <div>
-                      <img 
-                        src={invoiceLogo} 
-                        alt="Crevion Ads" 
-                        style={{ height: '75px', objectFit: 'contain', marginBottom: '10px', display: 'block' }}
+                      <img
+                        src={invoiceLogo}
+                        alt="Crevion Ads"
+                        style={{ height: '92px', objectFit: 'contain', marginBottom: '10px', display: 'block' }}
                       />
-                      
+
                       {/* Crevion Ads Permanent Address Details Box */}
                       <div style={{
                         border: '1.5px solid #d4c8e3',
-                        borderRadius: '8px',
-                        padding: '8px 12px',
-                        width: '260px',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        width: '265px',
                         background: '#ffffff'
                       }}>
-                        <div style={{ fontWeight: '800', fontSize: '11.5px', color: '#2c1947', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: '800', fontSize: '13px', color: '#2b1947', marginBottom: '8px', letterSpacing: '-0.01em' }}>
                           {companyDetails.name}
                         </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px', color: '#4a3b60' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          {companyDetails.phone && (
+                            <img src={generateAddressLineSVG('phone', companyDetails.phone)} alt="" style={{ height: '22px', display: 'block' }} />
+                          )}
+                          {companyDetails.email && (
+                            <img src={generateAddressLineSVG('email', companyDetails.email)} alt="" style={{ height: '22px', display: 'block' }} />
+                          )}
+                          {companyDetails.website && (
+                            <img src={generateAddressLineSVG('website', companyDetails.website)} alt="" style={{ height: '22px', display: 'block' }} />
+                          )}
+                          {companyDetails.address && (
+                            <img src={generateAddressLineSVG('address', companyDetails.address)} alt="" style={{ height: '22px', display: 'block' }} />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Right: INVOICE title + Gold pill + Dates */}
+                    <div style={{ paddingTop: '85px' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '18.5px', fontWeight: '600', color: '#2b1947', letterSpacing: '0.08em', lineHeight: '1.2', marginBottom: '6px' }}>
+                          INVOICE
+                        </div>
+                        <div style={{ marginBottom: '12px', textAlign: 'right' }}>
+                          <img 
+                            src={generateInvoiceBadgeSVG(invoiceForm.invoiceNumber)} 
+                            alt={invoiceForm.invoiceNumber}
+                            style={{ height: '22px', display: 'inline-block' }}
+                          />
+                        </div>
+                        <table style={{ borderCollapse: 'collapse', marginLeft: 'auto', fontSize: '10.5px', color: '#685980', lineHeight: '1.7' }}>
                           <tbody>
-                            {companyDetails.phone && (
-                              <tr>
-                                <td style={{ width: '20px', verticalAlign: 'middle', padding: '2px 0' }}>
-                                  <div style={{ width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <FiPhone size={10} style={{ color: '#3c2269' }} />
-                                  </div>
-                                </td>
-                                <td style={{ verticalAlign: 'middle', padding: '2px 0', lineHeight: '1.3', color: '#4a3b60', fontWeight: '500' }}>
-                                  {companyDetails.phone}
-                                </td>
-                              </tr>
-                            )}
-                            {companyDetails.email && (
-                              <tr>
-                                <td style={{ width: '20px', verticalAlign: 'middle', padding: '2px 0' }}>
-                                  <div style={{ width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <FiMail size={10} style={{ color: '#3c2269' }} />
-                                  </div>
-                                </td>
-                                <td style={{ verticalAlign: 'middle', padding: '2px 0', lineHeight: '1.3', color: '#4a3b60', fontWeight: '500' }}>
-                                  {companyDetails.email}
-                                </td>
-                              </tr>
-                            )}
-                            {companyDetails.website && (
-                              <tr>
-                                <td style={{ width: '20px', verticalAlign: 'middle', padding: '2px 0' }}>
-                                  <div style={{ width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <FiGlobe size={10} style={{ color: '#3c2269' }} />
-                                  </div>
-                                </td>
-                                <td style={{ verticalAlign: 'middle', padding: '2px 0', lineHeight: '1.3', color: '#4a3b60', fontWeight: '500' }}>
-                                  {companyDetails.website}
-                                </td>
-                              </tr>
-                            )}
-                            {companyDetails.address && (
-                              <tr>
-                                <td style={{ width: '20px', verticalAlign: 'middle', padding: '2px 0' }}>
-                                  <div style={{ width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <FiMapPin size={10} style={{ color: '#3c2269' }} />
-                                  </div>
-                                </td>
-                                <td style={{ verticalAlign: 'middle', padding: '2px 0', lineHeight: '1.3', color: '#4a3b60', fontWeight: '500' }}>
-                                  {companyDetails.address}
-                                </td>
-                              </tr>
-                            )}
+                            <tr>
+                              <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '4px' }}>Invoice Date :</td>
+                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '4px', width: '100px' }}>{invoiceForm.invoiceDate}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '4px' }}>Terms :</td>
+                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '4px', width: '100px', whiteSpace: 'nowrap' }}>{invoiceForm.terms}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '6px' }}>Due Date :</td>
+                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '6px', width: '100px' }}>{invoiceForm.dueDate}</td>
+                            </tr>
+                            <tr>
+                              <td colSpan="2" style={{ paddingTop: '4px', textAlign: 'right' }}>
+                                <img 
+                                  src={generateBalanceDueBadgeSVG(invoiceForm.balanceDue)} 
+                                  alt="Balance Due" 
+                                  style={{ height: '26px', display: 'inline-block' }}
+                                />
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                       </div>
                     </div>
-
-                    {/* Top Right: INVOICE title + Gold pill + Dates in 100% Safe HTML Table Layout */}
-                    <div>
-                      <table style={{ borderCollapse: 'collapse', marginLeft: 'auto', textAlign: 'right' }}>
-                        <tbody>
-                          <tr>
-                            <td style={{ fontSize: '26px', fontWeight: '900', color: '#2b1947', letterSpacing: '0.04em', paddingBottom: '6px', lineHeight: '1.2' }}>
-                              INVOICE
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style={{ paddingBottom: '10px', textAlign: 'right' }}>
-                              <div style={{ 
-                                background: '#f4ce41', 
-                                color: '#2b1947', 
-                                fontWeight: '800', 
-                                fontSize: '10.5px', 
-                                padding: '3px 12px', 
-                                borderRadius: '5px',
-                                display: 'inline-block'
-                              }}>
-                                {invoiceForm.invoiceNumber}
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              <div style={{ fontSize: '10.5px', color: '#685980', lineHeight: '1.7' }}>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                  <span style={{ color: '#685980', fontWeight: '600' }}>Invoice Date</span>
-                                  <span style={{ fontWeight: '700', color: '#2c1947', width: '110px', textAlign: 'left' }}>: {invoiceForm.invoiceDate}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                  <span style={{ color: '#685980', fontWeight: '600' }}>Terms</span>
-                                  <span style={{ fontWeight: '700', color: '#2c1947', width: '110px', textAlign: 'left', whiteSpace: 'nowrap' }}>: {invoiceForm.terms}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                  <span style={{ color: '#685980', fontWeight: '600' }}>Due Date</span>
-                                  <span style={{ fontWeight: '700', color: '#2c1947', width: '110px', textAlign: 'left' }}>: {invoiceForm.dueDate}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                  <span style={{ color: '#685980', fontWeight: '600' }}>Balance Due</span>
-                                  <span style={{ fontWeight: '800', color: '#ef4444', width: '110px', textAlign: 'left', fontFamily: 'JetBrains Mono, monospace' }}>: ₹{invoiceForm.balanceDue.toLocaleString()}</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
                   </div>
 
-                  {/* ── Bill To Section (Perfectly Centered Line Alignment) ── */}
-                  <div style={{ marginBottom: '6px', fontSize: '11.5px', color: '#2c1947', lineHeight: '20px' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '4px',
-                      background: '#2b1947',
-                      color: '#ffffff',
-                      textAlign: 'center',
-                      lineHeight: '20px',
-                      verticalAlign: 'middle',
-                      marginRight: '6px'
-                    }}>
-                      <FiUser size={10} style={{ display: 'inline', verticalAlign: 'middle' }} />
-                    </span>
-                    <span style={{ fontWeight: '800', fontSize: '12.5px', color: '#2b1947', verticalAlign: 'middle', marginRight: '8px' }}>
+                  {/* ── Bill To Section (Clean Text Line without Icon Box) ── */}
+                  <div style={{ marginBottom: '6px', fontSize: '12px', color: '#2c1947' }}>
+                    <span style={{ fontWeight: '800', color: '#2b1947', marginRight: '8px' }}>
                       Bill TO :
                     </span>
-                    <span style={{ fontWeight: '700', color: '#2b1947', fontSize: '11.5px', verticalAlign: 'middle' }}>
+                    <span style={{ fontWeight: '700', color: '#2b1947' }}>
                       {[
                         invoiceForm.clientName,
                         invoiceForm.clientPhone,
@@ -942,6 +938,11 @@ const Invoice = () => {
                 <div style={{
                   background: '#2b1947',
                   padding: '0 36px 36px 36px',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-start',
+                  gap: '16px',
                   position: 'relative'
                 }}>
 
@@ -967,50 +968,40 @@ const Invoice = () => {
                       <tbody>
                         {invoiceForm.items.map((item, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid #e2d9f0' }}>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '6px 6px' : '10px 6px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
+                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
                               {idx + 1}
                             </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '6px 10px' : '10px 10px', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
+                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 10px' : '12px 10px 14px 10px', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
                               {/* Bold Title */}
-                              <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '11px', marginBottom: '1px' }}>
+                              <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '11px', marginBottom: '2px' }}>
                                 {item.title || 'Service Title'}
                               </div>
                               {/* Description below title */}
                               {item.description && (
-                                <div style={{ fontSize: '9px', color: '#685980', fontWeight: '500', lineHeight: '1.25' }}>
+                                <div style={{ fontSize: '9px', color: '#685980', fontWeight: '500', lineHeight: '1.35', marginBottom: '2px' }}>
                                   {item.description}
                                 </div>
                               )}
                             </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '6px 6px' : '10px 6px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
+                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
                               {item.quantity}
                             </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '6px 6px' : '10px 6px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
+                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
                               ₹{Number(item.rate).toLocaleString()}
                             </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '6px 10px' : '10px 10px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#2b1947', verticalAlign: 'top' }}>
+                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 10px' : '12px 10px 14px 10px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#2b1947', verticalAlign: 'top' }}>
                               ₹{Number(item.amount).toLocaleString()}
                             </td>
                           </tr>
                         ))}
 
-                        {/* Fill empty rows only if items < 3 */}
-                        {invoiceForm.items.length < 3 && Array.from({ length: 3 - invoiceForm.items.length }).map((_, emptyIdx) => (
-                          <tr key={`empty-${emptyIdx}`} style={{ borderBottom: emptyIdx < 2 - invoiceForm.items.length ? '1px solid #e2d9f0' : 'none' }}>
-                            <td style={{ padding: '12px 6px', borderRight: '1px solid #e2d9f0' }}></td>
-                            <td style={{ padding: '12px 10px', borderRight: '1px solid #e2d9f0' }}></td>
-                            <td style={{ padding: '12px 6px', borderRight: '1px solid #e2d9f0' }}></td>
-                            <td style={{ padding: '12px 6px', borderRight: '1px solid #e2d9f0' }}></td>
-                            <td style={{ padding: '12px 10px' }}></td>
-                          </tr>
-                        ))}
                       </tbody>
                     </table>
 
                     {/* ── Summary Totals Box inside Table Card Bottom Right ── */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
                       <div style={{ width: '310px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        
+
                         {/* TOTAL AMOUNT */}
                         <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden' }}>
                           <div style={{ flex: 1, background: '#2b1947', color: '#f4ce41', padding: '6px 12px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }}>
