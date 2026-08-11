@@ -17,6 +17,27 @@ const iconGlobeSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000
 const iconMapPinSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
 const iconUserSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
+// Helper to format date to DD/MM/YYYY (date/month/year)
+const formatDateDMY = (dateInput) => {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [year, month, day] = trimmed.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return String(dateInput);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 // Crisp SVG Data URI generator for Gold Invoice Number Badge
 const generateInvoiceBadgeSVG = (invNum) => {
   const text = invNum || 'INV-0001';
@@ -450,7 +471,7 @@ const Invoice = () => {
                           <td className="py-2.5 px-3 font-bold text-neutral-800">{inv.clientName}</td>
                           <td className="py-2.5 px-3 font-mono text-neutral-500">{inv.clientPhone || inv.clientEmail || '—'}</td>
                           <td className="py-2.5 px-3 font-mono text-neutral-500">
-                            {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : ''}
+                            {inv.invoiceDate ? formatDateDMY(inv.invoiceDate) : ''}
                           </td>
                           <td className="py-2.5 px-3 font-bold font-mono text-neutral-800">₹{inv.totalAmount?.toLocaleString()}</td>
                           <td className="py-2.5 px-3 font-bold font-mono text-rose-600">₹{inv.balanceDue?.toLocaleString()}</td>
@@ -886,7 +907,7 @@ const Invoice = () => {
                           <tbody>
                             <tr>
                               <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '4px' }}>Invoice Date :</td>
-                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '4px', width: '100px' }}>{invoiceForm.invoiceDate}</td>
+                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '4px', width: '100px' }}>{formatDateDMY(invoiceForm.invoiceDate)}</td>
                             </tr>
                             <tr>
                               <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '4px' }}>Terms :</td>
@@ -894,7 +915,7 @@ const Invoice = () => {
                             </tr>
                             <tr>
                               <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '6px' }}>Due Date :</td>
-                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '6px', width: '100px' }}>{invoiceForm.dueDate}</td>
+                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '6px', width: '100px' }}>{formatDateDMY(invoiceForm.dueDate)}</td>
                             </tr>
                             <tr>
                               <td colSpan="2" style={{ paddingTop: '4px', textAlign: 'right' }}>
