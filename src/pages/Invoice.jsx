@@ -486,7 +486,7 @@ const Invoice = () => {
             onClick={startNewInvoice}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#8a32c6] hover:bg-[#7828b0] text-white text-[11px] font-bold shadow-xs transition-colors"
           >
-            <FiPlus size={13} /> + New Client Invoice
+            <FiPlus size={13} /> New Client Invoice
           </button>
         </div>
       </div>
@@ -771,7 +771,7 @@ const Invoice = () => {
                   onClick={addItemRow}
                   className="text-[10px] font-bold text-[#8a32c6] hover:text-[#7828b0] flex items-center gap-1"
                 >
-                  <FiPlus size={11} /> + Add Item
+                  <FiPlus size={11} /> Add Item
                 </button>
               </div>
 

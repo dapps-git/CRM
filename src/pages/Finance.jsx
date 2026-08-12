@@ -422,7 +422,7 @@ const Finance = () => {
             className="flex items-center space-x-1 px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shadow-xs transition-colors"
           >
             <FiPlus size={11} />
-            <span>+ Income</span>
+            <span>Income</span>
           </button>
           <button
             type="button"
@@ -432,7 +432,7 @@ const Finance = () => {
             onMouseLeave={e => e.currentTarget.style.background = '#8a32c6'}
           >
             <FiPlus size={11} />
-            <span>+ Expense</span>
+            <span>Expense</span>
           </button>
         </div>
       </div>
@@ -660,6 +660,7 @@ const Finance = () => {
                             <FiFile size={12} />
                           </a>
                         )}
+                        {/* Only Expense rows get an Edit button — Income rows are add-only */}
                         {item.isExpense && (
                           <button
                             type="button"

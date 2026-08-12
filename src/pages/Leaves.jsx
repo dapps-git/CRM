@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FiCalendar, FiChevronLeft, FiChevronRight, FiPlus, 
-  FiEdit2, FiTrash2, FiX, FiUser, FiGrid, FiList, FiCheckCircle
+  FiEdit2, FiTrash2, FiX, FiUser, FiGrid, FiList, FiCheckCircle, FiDownload
 } from 'react-icons/fi';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -221,6 +221,171 @@ const Leaves = () => {
     return s.member._id === selectedPartnerFilter;
   });
 
+  // ── Download Monthly Excel (CSV) ──
+  const handleDownloadExcel = () => {
+    const rows = [];
+    // Header row
+    const headerCols = ['Member', 'Present', 'Absent', 'Half Day', 'Holiday', 'Total Leave'];
+    rows.push(headerCols.join(','));
+
+    // Data rows from summaryData
+    summaryData.forEach(({ member, stats }) => {
+      const today = new Date(); today.setHours(0,0,0,0);
+      // Get daily statuses for this member from leavesList
+      const memberLeaves = leavesList.filter(l => {
+        const lMemId = typeof l.memberId === 'object' ? l.memberId._id : l.memberId;
+        return lMemId === member._id;
+      });
+      const dailyStatus = {};
+      memberLeaves.forEach(l => { dailyStatus[l.date] = l.status; });
+      const pastDays = daysArray.filter(d => new Date(year, monthNum - 1, d) <= today).length;
+      const nonPresent = Object.values(dailyStatus).filter(s => s !== 'Present').length;
+      const presentCount = Math.max(0, pastDays - nonPresent);
+
+      rows.push([
+        `"${member.name}"`,
+        presentCount,
+        stats.absent || 0,
+        stats.halfDay || 0,
+        stats.holiday || 0,
+        stats.totalLeave || 0
+      ].join(','));
+    });
+
+    const csvContent = '\uFEFF' + rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Leave_Report_${currentMonthName.replace(' ', '_')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Leave Excel report for ${currentMonthName} downloaded!`);
+  };
+
+  // ── Download Monthly PDF (direct download, no print dialog) ──
+  const handleDownloadPDF = async () => {
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Build table rows HTML
+    let rowsHtml = '';
+    summaryData.forEach(({ member, stats }, idx) => {
+      const memberLeaves = leavesList.filter(l => {
+        const lMemId = typeof l.memberId === 'object' ? l.memberId._id : l.memberId;
+        return lMemId === member._id;
+      });
+      const dailyStatus = {};
+      memberLeaves.forEach(l => { dailyStatus[l.date] = l.status; });
+      const pastDays = daysArray.filter(d => new Date(year, monthNum - 1, d) <= today).length;
+      const nonPresent = Object.values(dailyStatus).filter(s => s !== 'Present').length;
+      const presentCount = Math.max(0, pastDays - nonPresent);
+      const rowBg = idx % 2 === 0 ? '#ffffff' : '#f9f5ff';
+
+      rowsHtml += `
+        <tr style="background:${rowBg};">
+          <td style="padding:9px 14px; font-weight:700; color:#2c2438; border-bottom:1px solid #ede9f7;">${member.name}</td>
+          <td style="padding:9px 14px; text-align:center; font-weight:700; color:#059669; border-bottom:1px solid #ede9f7;">${presentCount}</td>
+          <td style="padding:9px 14px; text-align:center; font-weight:700; color:#dc2626; border-bottom:1px solid #ede9f7;">${stats.absent || 0}</td>
+          <td style="padding:9px 14px; text-align:center; font-weight:700; color:#d97706; border-bottom:1px solid #ede9f7;">${stats.halfDay || 0}</td>
+          <td style="padding:9px 14px; text-align:center; font-weight:700; color:#2563eb; border-bottom:1px solid #ede9f7;">${stats.holiday || 0}</td>
+          <td style="padding:9px 14px; text-align:center; font-weight:800; color:#8a32c6; border-bottom:1px solid #ede9f7; background:#f5eeff;">${stats.totalLeave || 0}</td>
+        </tr>`;
+    });
+
+    const htmlContent = `
+      <div style="font-family: 'Arial', sans-serif; padding: 0; margin: 0; background: #fff;">
+        
+        <!-- Header Banner -->
+        <div style="background: linear-gradient(135deg, #8a32c6 0%, #6b21a8 100%); padding: 28px 32px; border-radius: 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:20px; font-weight:900; color:#f4ce41; letter-spacing:0.04em; text-transform:uppercase;">Crevion Ads</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:4px;">Leave Management Report</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:16px; font-weight:800; color:#ffffff;">${currentMonthName}</div>
+              <div style="font-size:9px; color:rgba(255,255,255,0.65); margin-top:3px;">Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Legend -->
+        <div style="display:flex; gap:10px; padding:16px 32px 8px; background:#fdf9ff;">
+          <div style="flex:1; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:10px 14px; text-align:center;">
+            <div style="font-size:9px; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:3px;">P = Present</div>
+            <div style="font-size:8px; color:#166534;">Days worked this month</div>
+          </div>
+          <div style="flex:1; background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; padding:10px 14px; text-align:center;">
+            <div style="font-size:9px; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:3px;">A = Absent</div>
+            <div style="font-size:8px; color:#991b1b;">Unexcused absences</div>
+          </div>
+          <div style="flex:1; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:10px 14px; text-align:center;">
+            <div style="font-size:9px; font-weight:700; color:#92400e; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:3px;">HD = Half Day</div>
+            <div style="font-size:8px; color:#92400e;">Partial attendance days</div>
+          </div>
+          <div style="flex:1; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 14px; text-align:center;">
+            <div style="font-size:9px; font-weight:700; color:#1e40af; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:3px;">O = Holiday</div>
+            <div style="font-size:8px; color:#1e40af;">Company holidays</div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div style="padding: 8px 32px 32px;">
+          <table style="width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; box-shadow: 0 2px 12px rgba(138,50,198,0.08);">
+            <thead>
+              <tr style="background: linear-gradient(90deg, #8a32c6, #7828b0);">
+                <th style="padding:11px 14px; text-align:left; font-size:9px; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.1em;">Member Name</th>
+                <th style="padding:11px 14px; text-align:center; font-size:9px; font-weight:800; color:#f4ce41; text-transform:uppercase; letter-spacing:0.1em;">Present</th>
+                <th style="padding:11px 14px; text-align:center; font-size:9px; font-weight:800; color:#fca5a5; text-transform:uppercase; letter-spacing:0.1em;">Absent</th>
+                <th style="padding:11px 14px; text-align:center; font-size:9px; font-weight:800; color:#fcd34d; text-transform:uppercase; letter-spacing:0.1em;">Half Day</th>
+                <th style="padding:11px 14px; text-align:center; font-size:9px; font-weight:800; color:#93c5fd; text-transform:uppercase; letter-spacing:0.1em;">Holiday</th>
+                <th style="padding:11px 14px; text-align:center; font-size:9px; font-weight:800; color:#e9d5ff; text-transform:uppercase; letter-spacing:0.1em;">Total Leave</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+
+          <!-- Footer note -->
+          <div style="margin-top:20px; padding:12px 16px; background:#f9f5ff; border-left:4px solid #8a32c6; border-radius:0 6px 6px 0;">
+            <p style="font-size:8.5px; color:#6b21a8; margin:0; font-weight:600;">
+              * Total Leave = Absent + Half Day + Holiday days recorded in the system for ${currentMonthName}.
+              Present count reflects past working days not marked otherwise.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Create a hidden div, render HTML into it, then use html2pdf
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '-9999px';
+    container.style.left = '-9999px';
+    container.style.width = '794px';
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename: `Leave_Report_${currentMonthName.replace(' ', '_')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(container)
+        .save();
+      toast.success(`Leave PDF for ${currentMonthName} downloaded!`);
+    } catch (err) {
+      toast.error('Failed to generate PDF');
+      console.error(err);
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
   /* ─── Shared Inputs ─── */
   const INPUT = {
     background: '#ffffff',
@@ -244,11 +409,11 @@ const Leaves = () => {
       {/* ── Page Header / Action Bar ── */}
       <div className="flex flex-wrap justify-between items-center gap-2">
         {/* Segmented Tab Switcher */}
-        <div className="bg-purple-100/60 p-0.5 rounded-lg flex space-x-1 border border-purple-200/50">
+        <div className="bg-purple-100/60 p-0.5 flex space-x-1 border border-purple-200/50">
           <button
             type="button"
             onClick={() => setActiveTab('matrix')}
-            className={`px-3 py-1 text-xs font-bold rounded-md transition-all flex items-center space-x-1.5 ${
+            className={`px-3 py-1 text-xs font-bold transition-all flex items-center space-x-1.5 ${
               activeTab === 'matrix' 
                 ? 'bg-white text-[#8a32c6] shadow-xs' 
                 : 'text-neutral-600 hover:text-[#8a32c6] hover:bg-white/50'
@@ -260,7 +425,7 @@ const Leaves = () => {
           <button
             type="button"
             onClick={() => setActiveTab('cards')}
-            className={`px-3 py-1 text-xs font-bold rounded-md transition-all flex items-center space-x-1.5 ${
+            className={`px-3 py-1 text-xs font-bold transition-all flex items-center space-x-1.5 ${
               activeTab === 'cards' 
                 ? 'bg-white text-[#8a32c6] shadow-xs' 
                 : 'text-neutral-600 hover:text-[#8a32c6] hover:bg-white/50'
@@ -275,7 +440,7 @@ const Leaves = () => {
           <button
             type="button"
             onClick={handleOpenHolidayModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold rounded-lg shadow-2xs transition-all hover:shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold shadow-2xs transition-all hover:shadow-xs"
           >
             <FiCalendar size={13} /> Mark Company Holiday
           </button>
@@ -283,7 +448,7 @@ const Leaves = () => {
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#8a32c6] hover:bg-[#7828b0] text-white text-xs font-semibold rounded-lg shadow-2xs transition-all hover:shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#8a32c6] hover:bg-[#7828b0] text-white text-xs font-semibold shadow-2xs transition-all hover:shadow-xs"
           >
             <FiPlus size={13} /> Mark Attendance
           </button>
@@ -291,10 +456,10 @@ const Leaves = () => {
       </div>
 
       {/* ── Filter Bar & Color Legend — single unified row ── */}
-      <div className="bg-white border border-purple-100/80 rounded-xl px-4 py-2 shadow-xs flex flex-wrap items-center gap-3">
+      <div className="bg-white border border-purple-100/80 px-4 py-2 shadow-xs flex flex-wrap items-center gap-3">
 
         {/* Month Picker */}
-        <div className="flex items-center gap-1 bg-purple-50/80 border border-purple-200/80 rounded-lg px-2 py-1 relative shadow-2xs">
+        <div className="flex items-center gap-1 bg-purple-50/80 border border-purple-200/80 px-2 py-1 relative shadow-2xs">
           <button
             type="button"
             onClick={(e) => {
@@ -302,7 +467,7 @@ const Leaves = () => {
               const d = new Date(year, monthNum - 2, 1);
               setSelectedMonth(d.toISOString().slice(0, 7));
             }}
-            className="p-1 hover:bg-purple-200/80 rounded text-[#8a32c6] transition-colors relative z-20 cursor-pointer"
+            className="p-1 hover:bg-purple-200/80 text-[#8a32c6] transition-colors relative z-20 cursor-pointer"
             title="Previous Month"
           >
             <FiChevronLeft size={16} />
@@ -328,7 +493,7 @@ const Leaves = () => {
               const d = new Date(year, monthNum, 1);
               setSelectedMonth(d.toISOString().slice(0, 7));
             }}
-            className="p-1 hover:bg-purple-200/80 rounded text-[#8a32c6] transition-colors relative z-20 cursor-pointer"
+            className="p-1 hover:bg-purple-200/80 text-[#8a32c6] transition-colors relative z-20 cursor-pointer"
             title="Next Month"
           >
             <FiChevronRight size={16} />
@@ -346,9 +511,9 @@ const Leaves = () => {
             { label: 'HD',text: 'Half Day', bg: '#f59e0b', color: 'white', pillBg: 'bg-amber-50 text-amber-900 border-amber-200/80' },
             { label: 'O', text: 'Holiday',  bg: '#2563eb', color: 'white', pillBg: 'bg-blue-50 text-blue-900 border-blue-200/80' },
           ].map(({ label, text, bg, color, pillBg }) => (
-            <div key={label} className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${pillBg} text-2xs font-semibold shadow-2xs`}>
+            <div key={label} className={`flex items-center gap-1 px-2 py-0.5 border ${pillBg} text-2xs font-semibold shadow-2xs`}>
               <span
-                className="w-3.5 h-3.5 rounded flex items-center justify-center font-bold text-[8.5px] flex-shrink-0"
+                className="w-3.5 h-3.5 flex items-center justify-center font-bold text-[8.5px] flex-shrink-0"
                 style={{ background: bg, color }}
               >
                 {label}
@@ -367,7 +532,7 @@ const Leaves = () => {
           <select
             value={selectedPartnerFilter}
             onChange={(e) => setSelectedPartnerFilter(e.target.value)}
-            style={{ ...INPUT, width: 'auto', padding: '4px 10px', fontSize: '11px', fontWeight: '700', borderRadius: '8px' }}
+            style={{ ...INPUT, width: 'auto', padding: '4px 10px', fontSize: '11px', fontWeight: '700', borderRadius: '0px' }}
             onFocus={onFocus}
             onBlur={onBlur}
           >
@@ -390,7 +555,7 @@ const Leaves = () => {
         <>
           {/* ── TAB 1: MONTHLY ATTENDANCE MATRIX SHEET FOR ALL MEMBERS ── */}
           {activeTab === 'matrix' && (
-            <div className="bg-white border border-purple-100 rounded-2xl overflow-hidden shadow-xs">
+            <div className="bg-white border border-purple-100 overflow-hidden shadow-xs">
               <div className="px-6 py-3.5 bg-gradient-to-r from-purple-50/80 via-purple-50/40 to-white border-b border-purple-100 flex justify-between items-center">
                 <h3 className="text-xs font-extrabold text-[#8a32c6] uppercase tracking-wider flex items-center gap-2">
                   <span>Monthly Attendance Sheet</span>
@@ -438,14 +603,14 @@ const Leaves = () => {
                           <td className="py-2.5 px-3 border-r border-purple-100 font-semibold text-neutral-900 sticky left-0 bg-white z-10 shadow-xs min-w-[180px]">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 truncate">
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#8a32c6] to-[#6d25a3] text-white font-extrabold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                <div className="w-6 h-6 bg-gradient-to-br from-[#8a32c6] to-[#6d25a3] text-white font-extrabold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs">
                                   {member.name ? member.name.charAt(0).toUpperCase() : 'M'}
                                 </div>
                                 <span className="truncate font-bold text-xs text-neutral-900">{member.name}</span>
                               </div>
                               <button
                                 onClick={() => setCalendarMember(member)}
-                                className="p-1 rounded-lg hover:bg-purple-100 text-[#8a32c6] transition-colors flex-shrink-0"
+                                className="p-1 hover:bg-purple-100 text-[#8a32c6] transition-colors flex-shrink-0"
                                 title={`View ${member.name}'s Calendar`}
                               >
                                 <FiCalendar size={13} />
@@ -475,7 +640,7 @@ const Leaves = () => {
                               >
                                 {badge ? (
                                   <span 
-                                    className="w-6 h-6 mx-auto rounded-md flex items-center justify-center font-bold text-[11px] shadow-2xs"
+                                    className="w-6 h-6 mx-auto flex items-center justify-center font-bold text-[11px] shadow-2xs"
                                     style={{ background: badge.bg, color: badge.color, opacity: 1 }}
                                   >
                                     {badge.label}
@@ -533,11 +698,11 @@ const Leaves = () => {
               {filteredSummary.map(({ member, stats }) => (
                 <div 
                   key={member._id}
-                  className="bg-white border border-purple-100/80 rounded-2xl p-4.5 shadow-xs space-y-4 hover:border-purple-300 transition-colors relative"
+                  className="bg-white border border-purple-100/80 p-4.5 shadow-xs space-y-4 hover:border-purple-300 transition-colors relative"
                 >
                   <div className="flex justify-between items-center border-b border-purple-100/60 pb-3">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-9 h-9 rounded-full bg-purple-100 text-[#8a32c6] flex items-center justify-center font-semibold text-sm">
+                      <div className="w-9 h-9 bg-purple-100 text-[#8a32c6] flex items-center justify-center font-semibold text-sm">
                         <FiUser size={17} />
                       </div>
                       <div>
@@ -586,17 +751,17 @@ const Leaves = () => {
       {/* ── INDIVIDUAL MEMBER CALENDAR MODAL ── */}
       {calendarMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white border border-purple-200 rounded-2xl p-6 shadow-2xl relative space-y-4">
+          <div className="w-full max-w-lg bg-white border border-purple-200 p-6 shadow-2xl relative space-y-4">
             
             <button
               onClick={() => setCalendarMember(null)}
-              className="absolute right-4 top-4 p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="absolute right-4 top-4 p-1.5 hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <FiX size={18} />
             </button>
 
             <div className="flex items-center space-x-3 border-b border-purple-100 pb-3.5">
-              <div className="w-10 h-10 rounded-full bg-purple-100 text-[#8a32c6] flex items-center justify-center font-semibold">
+              <div className="w-10 h-10 bg-purple-100 text-[#8a32c6] flex items-center justify-center font-semibold">
                 <FiCalendar size={19} />
               </div>
               <div>
@@ -611,7 +776,7 @@ const Leaves = () => {
 
             {/* Calendar Grid (Days 1 to 31) */}
             <div className="space-y-2">
-              <div className="grid grid-cols-7 gap-1 text-center font-semibold text-xs text-purple-900 bg-purple-50 p-2 rounded-xl">
+              <div className="grid grid-cols-7 gap-1 text-center font-semibold text-xs text-purple-900 bg-purple-50 p-2">
                 <span>Sun</span>
                 <span>Mon</span>
                 <span>Tue</span>
@@ -624,7 +789,7 @@ const Leaves = () => {
               <div className="grid grid-cols-7 gap-1.5">
                 {/* Empty offset days for start of month */}
                 {Array.from({ length: new Date(year, monthNum - 1, 1).getDay() }).map((_, i) => (
-                  <div key={`offset-${i}`} className="h-12 bg-neutral-50 rounded-xl border border-neutral-100 opacity-30" />
+                  <div key={`offset-${i}`} className="h-12 bg-neutral-50 border border-neutral-100 opacity-30" />
                 ))}
 
                 {daysArray.map(dayNum => {
@@ -643,7 +808,7 @@ const Leaves = () => {
                       onClick={() => {
                         openMarkModalForMemberDate(calendarMember._id, dayNum);
                       }}
-                      className="h-12 rounded-xl border p-1.5 flex flex-col justify-between items-center transition-all hover:scale-105 shadow-2xs text-left"
+                      className="h-12 border p-1.5 flex flex-col justify-between items-center transition-all hover:scale-105 shadow-2xs text-left"
                       style={{
                         borderColor: badge ? badge.bg : 'rgba(138,50,198,0.15)',
                         background: badge ? `${badge.bg}15` : '#ffffff'
@@ -654,7 +819,7 @@ const Leaves = () => {
                       </span>
                       {badge ? (
                         <span 
-                          className="w-5 h-5 rounded-md flex items-center justify-center font-semibold text-[10px] shadow-2xs"
+                          className="w-5 h-5 flex items-center justify-center font-semibold text-[10px] shadow-2xs"
                           style={{ background: badge.bg, color: badge.color }}
                         >
                           {badge.label}
@@ -685,11 +850,11 @@ const Leaves = () => {
       {/* ── MARK / MODIFY ATTENDANCE MODAL ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-white border border-purple-200 rounded-2xl p-6 shadow-2xl relative space-y-4">
+          <div className="w-full max-w-md bg-white border border-purple-200 p-6 shadow-2xl relative space-y-4">
             
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="absolute right-4 top-4 p-1.5 hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <FiX size={18} />
             </button>
