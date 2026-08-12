@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  FiHome, 
-  FiBriefcase, 
-  FiDollarSign, 
-  FiUsers, 
-  FiCalendar, 
-  FiFileText, 
+import {
+  FiHome,
+  FiBriefcase,
+  FiDollarSign,
+  FiUsers,
+  FiCalendar,
+  FiFileText,
   FiPrinter,
-  FiSettings, 
-  FiLogOut, 
-  FiMenu, 
+  FiSettings,
+  FiLogOut,
+  FiMenu,
   FiX,
   FiEdit3
 } from 'react-icons/fi';
@@ -31,15 +31,15 @@ const Layout = ({ children }) => {
 
 
   const navItems = [
-    { name: 'Dashboard',        path: '/',          icon: FiHome },
-    { name: 'Business Numbers', path: '/business',  icon: FiBriefcase },
-    { name: 'Expenses',         path: '/finance',   icon: FiDollarSign },
-    { name: 'Invoice Module',   path: '/invoice',   icon: FiPrinter },
-    { name: 'Members',          path: '/members',   icon: FiUsers },
-    { name: 'Leave Management', path: '/leaves',    icon: FiCalendar },
-    { name: 'Reports',          path: '/reports',   icon: FiFileText },
-    { name: 'Notes',            path: '/notes',     icon: FiEdit3 },
-    { name: 'Settings',         path: '/settings',  icon: FiSettings },
+    { name: 'Dashboard', path: '/', icon: FiHome },
+    { name: 'Business Numbers', path: '/business', icon: FiBriefcase },
+    { name: 'Expenses', path: '/finance', icon: FiDollarSign },
+    { name: 'Invoice Module', path: '/invoice', icon: FiPrinter },
+    { name: 'Members', path: '/members', icon: FiUsers },
+    { name: 'Leave Management', path: '/leaves', icon: FiCalendar },
+    { name: 'Reports', path: '/reports', icon: FiFileText },
+    { name: 'Notes', path: '/notes', icon: FiEdit3 },
+    { name: 'Settings', path: '/settings', icon: FiSettings },
   ];
 
   const handleLogout = () => {
@@ -49,13 +49,13 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans bg-neutral-50 text-neutral-800">
-      
+
       {/* --- Mobile Header --- */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-[#8a32c6] text-white">
         <div className="flex items-center space-x-2">
-          <img 
-            src={companyLogo || logoImg} 
-            alt="Logo" 
+          <img
+            src={companyLogo || logoImg}
+            alt="Logo"
             className="h-11 max-w-[220px] w-auto object-contain"
             onError={(e) => { e.target.src = logoImg; }}
           />
@@ -80,7 +80,7 @@ const Layout = ({ children }) => {
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Brand header */}
           <div className="hidden md:flex flex-col items-center justify-center px-4 py-7 border-b border-purple-400/20">
-            <img 
+            <img
               src={companyLogo || logoImg}
               alt="Logo"
               className="h-16 max-w-[230px] w-auto object-contain transition-transform duration-200 hover:scale-105"
@@ -107,8 +107,8 @@ const Layout = ({ children }) => {
                   } : {
                     color: '#eddff9',      // Soft purple text
                   }}
-                  onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}}
-                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#eddff9'; }}}
+                  onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ffffff'; } }}
+                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#eddff9'; } }}
                 >
                   <Icon size={16} style={{ color: isActive ? '#2c2438' : '#eddff9' }} />
                   <span>{item.name}</span>
@@ -146,20 +146,20 @@ const Layout = ({ children }) => {
 
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div 
-          onClick={() => setSidebarOpen(false)} 
+        <div
+          onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
         />
       )}
 
       {/* --- Main Content --- */}
-      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: '#eadcf0' }}>
-        
+      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: '#F3F4F6' }}>
+
         {/* Top Navbar */}
         <header
           className="hidden md:flex items-center justify-between px-7 py-3.5"
           style={{
-            background: '#eadcf0',
+            background: '#F3F4F6',
             borderBottom: '1px solid rgba(138, 50, 198, 0.1)',
           }}
         >
@@ -179,7 +179,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 md:p-8" style={{ background: '#eadcf0' }}>
+        <main className="flex-1 p-6 md:p-8" style={{ background: '#F3F4F6' }}>
           {children}
         </main>
       </div>

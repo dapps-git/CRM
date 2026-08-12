@@ -8,7 +8,7 @@
 /* ===== CSS DESIGN TOKENS (LIGHT COLOR THEME) ===== */
 :root {
   /* Backgrounds */
-  --bg-primary: #faf8f5;
+  --bg-primary: #F3F4F6;
   /* Overall background color */
   --bg-card: #ffffff;
   /* Pure white card */
@@ -324,9 +324,12 @@
   body * {
     visibility: hidden !important;
   }
-  #pdf-invoice-print-area, #pdf-invoice-print-area * {
+
+  #pdf-invoice-print-area,
+  #pdf-invoice-print-area * {
     visibility: visible !important;
   }
+
   #pdf-invoice-print-area {
     position: absolute !important;
     left: 0 !important;
@@ -335,6 +338,7 @@
     margin: 0 auto !important;
     padding: 0 !important;
   }
+
   @page {
     size: A4 portrait;
     margin: 0;
