@@ -248,7 +248,7 @@ const Leaves = () => {
         stats.absent || 0,
         stats.halfDay || 0,
         stats.holiday || 0,
-        stats.totalLeave || 0
+        (stats.absent || 0) + ((stats.halfDay || 0) * 0.5)
       ].join(','));
     });
 
@@ -288,7 +288,7 @@ const Leaves = () => {
           <td style="padding:9px 14px; text-align:center; font-weight:700; color:#dc2626; border-bottom:1px solid #ede9f7;">${stats.absent || 0}</td>
           <td style="padding:9px 14px; text-align:center; font-weight:700; color:#d97706; border-bottom:1px solid #ede9f7;">${stats.halfDay || 0}</td>
           <td style="padding:9px 14px; text-align:center; font-weight:700; color:#2563eb; border-bottom:1px solid #ede9f7;">${stats.holiday || 0}</td>
-          <td style="padding:9px 14px; text-align:center; font-weight:800; color:#8a32c6; border-bottom:1px solid #ede9f7; background:#f5eeff;">${stats.totalLeave || 0}</td>
+          <td style="padding:9px 14px; text-align:center; font-weight:800; color:#8a32c6; border-bottom:1px solid #ede9f7; background:#f5eeff;">${(stats.absent || 0) + ((stats.halfDay || 0) * 0.5)}</td>
         </tr>`;
     });
 
@@ -673,7 +673,7 @@ const Leaves = () => {
                             {stats.holiday || 0}
                           </td>
                           <td className="py-2.5 px-2 text-center font-extrabold text-[#8a32c6] bg-purple-50/60 text-xs min-w-[65px]">
-                            {stats.totalLeave}
+                            {(stats.absent || 0) + ((stats.halfDay || 0) * 0.5)}
                           </td>
 
                         </tr>
