@@ -7,7 +7,8 @@ import {
   FiTrash2, 
   FiEdit,
   FiFile,
-  FiX
+  FiX,
+  FiPieChart
 } from 'react-icons/fi';
 import { 
   BarChart, 
@@ -25,11 +26,13 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { isLettersOnly, isNumbersOnly, compressImageToWebP } from '../utils/validation';
 import ConfirmModal from '../components/ConfirmModal';
+import { playAddSound, playDeleteSound } from '../utils/soundEffects';
 
 const Finance = () => {
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCharts, setShowCharts] = useState(false);
 
   // Filters
   const [selectedPartner, setSelectedPartner] = useState('All Partners');
@@ -70,6 +73,11 @@ const Finance = () => {
   const [incomeTouched, setIncomeTouched] = useState({});
   const [expenseTouched, setExpenseTouched] = useState({});
 
+  // Business client dropdown for Source field
+  const [businessClients, setBusinessClients] = useState([]);
+  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
+  const sourceDropdownRef = React.useRef(null);
+
   const partners = ['Saleel VT', 'Anfas Sir', 'Shamna Madam', 'Sabith Boss'];
   const expenseCategories = [
     'Office', 'Travel', 'Food', 'Software', 'Hardware', 'Marketing', 'Salary', 'Utilities', 'Miscellaneous'
@@ -78,12 +86,14 @@ const Finance = () => {
   const fetchFinanceData = async () => {
     setLoading(true);
     try {
-      const [incRes, expRes] = await Promise.all([
+      const [incRes, expRes, busRes] = await Promise.all([
         api.get('/income', { params: { limit: 2000 } }),
-        api.get('/expense', { params: { limit: 2000 } })
+        api.get('/expense', { params: { limit: 2000 } }),
+        api.get('/business', { params: { limit: 500 } }).catch(() => ({ data: { businesses: [] } }))
       ]);
       setIncomes(incRes.data.incomes || []);
       setExpenses(expRes.data.expenses || []);
+      setBusinessClients(busRes.data?.businesses || []);
     } catch {
       toast.error('Failed to load transaction data');
     } finally {
@@ -95,11 +105,22 @@ const Finance = () => {
     fetchFinanceData();
   }, []);
 
+  // Close source dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sourceDropdownRef.current && !sourceDropdownRef.current.contains(e.target)) {
+        setShowSourceDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [submittingIncome, setSubmittingIncome] = useState(false);
   const [submittingExpense, setSubmittingExpense] = useState(false);
 
   // Income Validation
-  const isIncomeSourceValid = incomeForm.source.trim() !== '' && isLettersOnly(incomeForm.source);
+  const isIncomeSourceValid = incomeForm.source.trim() !== '';
   const isIncomeAmountValid = incomeForm.amount !== '' && Number(incomeForm.amount) > 0 && isNumbersOnly(incomeForm.amount);
   const isIncomeFormValid = isIncomeSourceValid && isIncomeAmountValid;
 
@@ -146,6 +167,7 @@ const Finance = () => {
       await api.post('/income', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      playAddSound();
       toast.success('Income transaction logged successfully');
       setIncomeForm({
         amount: '',
@@ -208,6 +230,7 @@ const Finance = () => {
         await api.post('/expense', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
+        playAddSound();
         toast.success('Expense transaction logged successfully');
       }
       resetExpenseForm();
@@ -258,11 +281,12 @@ const Finance = () => {
     setDeleting(true);
     try {
       await api.delete(`/${deleteTarget.type}/${deleteTarget.id}`);
+      playDeleteSound();
       toast.success(`${deleteTarget.type === 'income' ? 'Income' : 'Expense'} record removed`);
       setDeleteTarget(null);
       fetchFinanceData();
-    } catch {
-      toast.error('Failed to delete transaction');
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to delete ${deleteTarget.type}`);
     } finally {
       setDeleting(false);
     }
@@ -297,6 +321,42 @@ const Finance = () => {
   const statsIncome = currentMonthIncomes.reduce((sum, item) => sum + item.amount, 0);
   const statsExpense = currentMonthExpenses.reduce((sum, item) => sum + item.amount, 0);
   const statsNet = statsIncome - statsExpense;
+
+  // Unified Transactions Ledger (Combined Inflow & Outflow)
+  const combinedTransactions = [
+    ...filteredIncomes.map(item => ({
+      _id: item._id,
+      date: item.date,
+      type: 'INCOME',
+      deleteType: 'income',
+      partner: item.receiver || 'Company Inflow',
+      reason: item.source,
+      category: item.businessName ? `Ref: ${item.businessName}` : 'Revenue',
+      inflow: item.amount,
+      outflow: 0,
+      image: item.receiptImage,
+      itemRef: item,
+      isExpense: false
+    })),
+    ...filteredExpenses.map(item => ({
+      _id: item._id,
+      date: item.date,
+      type: 'EXPENSE',
+      deleteType: 'expense',
+      partner: item.partner,
+      reason: item.reason,
+      category: item.category,
+      inflow: 0,
+      outflow: item.amount,
+      image: item.billImage,
+      itemRef: item,
+      isExpense: true
+    }))
+  ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const totalInflowSum = filteredIncomes.reduce((s, i) => s + i.amount, 0);
+  const totalOutflowSum = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+  const netTallySum = totalInflowSum - totalOutflowSum;
 
   // Chart 1: Partner breakdown
   const partnerExpenseShareData = partners.map(name => {
@@ -346,13 +406,26 @@ const Finance = () => {
 
         <div className="flex items-center space-x-2 text-2xs font-bold">
           <button
+            type="button"
+            onClick={() => setShowCharts(!showCharts)}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md border text-2xs font-bold transition-all ${
+              showCharts ? 'bg-purple-100 text-[#8a32c6] border-purple-300' : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50 shadow-xs'
+            }`}
+          >
+            <FiPieChart size={13} />
+            <span>{showCharts ? 'Hide Analytics' : 'Show Graphs'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => { setIncomeTouched({}); setIncomeModalOpen(true); }}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 shadow-xs transition-colors"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shadow-xs transition-colors"
           >
             <FiPlus size={11} />
             <span>+ Income</span>
           </button>
           <button
+            type="button"
             onClick={() => { resetExpenseForm(); setExpenseModalOpen(true); }}
             style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', borderRadius: 6, background: '#8a32c6', color: '#fff', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', fontSize: 11, fontWeight: 700, boxShadow: '0 2px 8px rgba(138,50,198,0.25)', border: 'none' }}
             onMouseEnter={e => e.currentTarget.style.background = '#7828b0'}
@@ -412,73 +485,75 @@ const Finance = () => {
         </div>
       </div>
 
-      {/* --- Charts Section --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Chart 1: Partner Expenses Bar Chart */}
-        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg shadow-xs">
-          <h3 className="text-2xs font-extrabold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">
-            Partner Expense Share
-          </h3>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={partnerExpenseShareData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0eeff" />
-                <XAxis dataKey="name" tick={{ fill: '#76726a', fontSize: 9, fontFamily: 'Montserrat', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#76726a', fontSize: 9, fontFamily: 'Montserrat', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(138, 50, 198, 0.03)' }}
-                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e3de', color: '#2c2438', fontSize: 10, fontFamily: 'Montserrat' }}
-                />
-                <Bar dataKey="amount" fill="#8a32c6" radius={[3, 3, 0, 0]} maxBarSize={35} />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* --- Charts Section (Hidden by Default) --- */}
+      {showCharts && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Chart 1: Partner Expenses Bar Chart */}
+          <div className="bg-white border border-neutral-200/60 p-4 rounded-lg shadow-xs">
+            <h3 className="text-2xs font-extrabold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">
+              Partner Expense Share
+            </h3>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={partnerExpenseShareData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0eeff" />
+                  <XAxis dataKey="name" tick={{ fill: '#76726a', fontSize: 9, fontFamily: 'Montserrat', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#76726a', fontSize: 9, fontFamily: 'Montserrat', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(138, 50, 198, 0.03)' }}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e3de', color: '#2c2438', fontSize: 10, fontFamily: 'Montserrat' }}
+                  />
+                  <Bar dataKey="amount" fill="#8a32c6" radius={[3, 3, 0, 0]} maxBarSize={35} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
 
-        {/* Chart 2: Category Distribution Pie Chart */}
-        <div className="bg-white border border-neutral-200/60 p-4 rounded-lg shadow-xs">
-          <h3 className="text-2xs font-extrabold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">
-            Expense Distribution
-          </h3>
-          <div className="h-44 flex items-center justify-around">
-            {categoryBreakdownData.length > 0 ? (
-              <>
-                <div className="w-1/2 h-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryBreakdownData}
-                        innerRadius={30}
-                        outerRadius={45}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {categoryBreakdownData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e3de', borderRadius: 6, fontSize: 10 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-1.5 w-1/2 max-h-[140px] overflow-y-auto pr-2">
-                  {categoryBreakdownData.map((entry, index) => (
-                    <div key={entry.name} className="flex items-center justify-between text-[9px] text-neutral-600 font-semibold">
-                      <div className="flex items-center space-x-1 truncate max-w-[80px]">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
-                        <span className="truncate">{entry.name}</span>
+          {/* Chart 2: Category Distribution Pie Chart */}
+          <div className="bg-white border border-neutral-200/60 p-4 rounded-lg shadow-xs">
+            <h3 className="text-2xs font-extrabold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-100 pb-2">
+              Expense Distribution
+            </h3>
+            <div className="h-44 flex items-center justify-around">
+              {categoryBreakdownData.length > 0 ? (
+                <>
+                  <div className="w-1/2 h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryBreakdownData}
+                          innerRadius={30}
+                          outerRadius={45}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {categoryBreakdownData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e3de', borderRadius: 6, fontSize: 10 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-1.5 w-1/2 max-h-[140px] overflow-y-auto pr-2">
+                    {categoryBreakdownData.map((entry, index) => (
+                      <div key={entry.name} className="flex items-center justify-between text-[9px] text-neutral-600 font-semibold">
+                        <div className="flex items-center space-x-1 truncate max-w-[80px]">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }} />
+                          <span className="truncate">{entry.name}</span>
+                        </div>
+                        <span className="font-mono text-neutral-800">₹{entry.value}</span>
                       </div>
-                      <span className="font-mono text-neutral-800">₹{entry.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-2xs text-neutral-400 italic">No expenses logged for this month.</p>
-            )}
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-2xs text-neutral-400 italic">No expenses logged for this month.</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* --- Filter Inputs for Tables --- */}
       <div className="flex flex-wrap items-center gap-3 mt-6">
@@ -513,59 +588,93 @@ const Finance = () => {
         </select>
       </div>
 
-      {/* --- Expense Records Ledger Table --- */}
+      {/* --- Unified Financial Ledger Table (Combined Inflow & Outflow Tally) --- */}
       <div className="bg-white border border-neutral-200/60 rounded-lg overflow-hidden mt-2 shadow-xs">
-        <div className="p-3 bg-purple-50/40 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">All Expenses</h2>
-          <span className="text-[10px] text-neutral-600 font-mono font-semibold">
-            Outflow Total: ₹{filteredExpenses.reduce((s, e) => s + e.amount, 0).toLocaleString()}
-          </span>
+        <div className="p-3 bg-purple-50/40 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">
+            Transactions Ledger & Tally
+          </h2>
+          <div className="flex items-center space-x-3 text-[10px] font-semibold">
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Income Total: +₹{totalInflowSum.toLocaleString()}
+            </span>
+            <span className="text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+              Expense Total: -₹{totalOutflowSum.toLocaleString()}
+            </span>
+            <span className={`px-2 py-0.5 rounded border font-extrabold ${netTallySum >= 0 ? 'bg-purple-50 text-[#8a32c6] border-purple-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+              Net Tally: ₹{netTallySum.toLocaleString()}
+            </span>
+          </div>
         </div>
-        
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-2xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/50 text-neutral-400 font-bold uppercase tracking-wider">
+              <tr className="border-b border-purple-100 bg-purple-50/70 text-[#8a32c6] font-semibold uppercase tracking-wider">
                 <th className="py-2.5 px-3">Date</th>
-                <th className="py-2.5 px-3">Partner</th>
-                <th className="py-2.5 px-3">Reason</th>
+                <th className="py-2.5 px-3">Type</th>
+                <th className="py-2.5 px-3">Partner / Source</th>
+                <th className="py-2.5 px-3">Reason / Details</th>
                 <th className="py-2.5 px-3">Category</th>
-                <th className="py-2.5 px-3">Amount</th>
+                <th className="py-2.5 px-3 text-right">Income (+₹)</th>
+                <th className="py-2.5 px-3 text-right">Expense (-₹)</th>
                 <th className="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {filteredExpenses.length > 0 ? (
-                filteredExpenses.map(item => (
-                  <tr key={item._id} className="hover:bg-neutral-50/50 text-neutral-700 font-medium transition-colors">
-                    <td className="py-2.5 px-3 font-mono text-neutral-500">{(() => { const d = new Date(item.date); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })()}</td>
+            <tbody className="divide-y divide-purple-100/60 font-medium">
+              {combinedTransactions.length > 0 ? (
+                combinedTransactions.map(item => (
+                  <tr key={`${item.type}-${item._id}`} className="hover:bg-purple-50/30 text-neutral-700 font-medium transition-colors">
+                    <td className="py-2.5 px-3 font-mono text-neutral-500">
+                      {(() => { const d = new Date(item.date); return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`; })()}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {item.isExpense ? (
+                        <span className="px-2 py-0.5 rounded text-[9px] bg-rose-50 border border-rose-200 text-rose-700 font-bold uppercase tracking-wider">
+                          Expense
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold uppercase tracking-wider">
+                          Income
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3 text-neutral-800 font-semibold">{item.partner}</td>
-                    <td className="py-2.5 px-3 truncate max-w-[150px]">{item.reason}</td>
+                    <td className="py-2.5 px-3 truncate max-w-[170px]">{item.reason}</td>
                     <td className="py-2.5 px-3">
                       <span className="px-2 py-0.5 rounded text-[9px] bg-neutral-100 border border-neutral-200 text-neutral-600 font-semibold uppercase">
                         {item.category}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 font-bold font-mono text-rose-600">₹{item.amount.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right font-bold font-mono text-emerald-600">
+                      {item.inflow > 0 ? `+₹${item.inflow.toLocaleString()}` : '—'}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-bold font-mono text-rose-600">
+                      {item.outflow > 0 ? `-₹${item.outflow.toLocaleString()}` : '—'}
+                    </td>
                     <td className="py-2.5 px-3 text-right">
                       <div className="inline-flex items-center space-x-2">
-                        {item.billImage && (
-                          <a href={item.billImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-[#8a32c6] hover:text-[#7828b0] p-1" title="View Bill Document">
-                            <img src={item.billImage} alt="Bill" className="w-7 h-7 object-cover rounded border border-neutral-200 shadow-xs" />
+                        {item.image && (
+                          <a href={item.image} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-[#8a32c6] hover:text-[#7828b0] p-1" title="View Document">
+                            <img src={item.image} alt="Doc" className="w-7 h-7 object-cover rounded border border-neutral-200 shadow-xs" />
                             <FiFile size={12} />
                           </a>
                         )}
+                        {item.isExpense && (
+                          <button
+                            type="button"
+                            onClick={() => openEditExpenseModal(item.itemRef)}
+                            className="text-[#8a32c6] hover:text-[#7828b0] transition-colors p-1"
+                            title="Edit Expense"
+                          >
+                            <FiEdit size={13} />
+                          </button>
+                        )}
                         <button
-                          onClick={() => openEditExpenseModal(item)}
-                          className="text-[#8a32c6] hover:text-[#7828b0] transition-colors p-1"
-                          title="Edit Expense"
-                        >
-                          <FiEdit size={13} />
-                        </button>
-                        <button
-                          onClick={() => confirmDelete('expense', item._id)}
+                          type="button"
+                          onClick={() => confirmDelete(item.deleteType, item._id)}
                           className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
-                          title="Delete Expense"
+                          title={`Delete ${item.type}`}
                         >
                           <FiTrash2 size={13} />
                         </button>
@@ -575,65 +684,9 @@ const Finance = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-6 text-neutral-400 italic">No expenses logged.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* --- Income Records Ledger Table --- */}
-      <div className="bg-white border border-neutral-200/60 rounded-lg overflow-hidden mt-6 shadow-xs">
-        <div className="p-3 bg-purple-50/40 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">Income Records</h2>
-          <span className="text-[10px] text-neutral-600 font-mono font-semibold">
-            Inflow Total: ₹{filteredIncomes.reduce((s, i) => s + i.amount, 0).toLocaleString()}
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-2xs border-collapse">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/50 text-neutral-400 font-bold uppercase tracking-wider">
-                <th className="py-2.5 px-3">Date</th>
-                <th className="py-2.5 px-3">Source</th>
-                <th className="py-2.5 px-3">Amount</th>
-                <th className="py-2.5 px-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {filteredIncomes.length > 0 ? (
-                filteredIncomes.map(item => (
-                  <tr key={item._id} className="hover:bg-neutral-50/50 text-neutral-700 font-medium transition-colors">
-                    <td className="py-2.5 px-3 font-mono text-neutral-500">{(() => { const d = new Date(item.date); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })()}</td>
-                    <td className="py-2.5 px-3 text-neutral-800 font-semibold">
-                      <div>{item.source}</div>
-                      {item.businessName && <span className="text-[9px] text-[#8a32c6] font-mono">{item.businessName}</span>}
-                    </td>
-                    <td className="py-2.5 px-3 font-bold font-mono text-emerald-600">₹{item.amount.toLocaleString()}</td>
-                    <td className="py-2.5 px-3 text-right">
-                      <div className="inline-flex items-center space-x-2">
-                        {item.receiptImage && (
-                          <a href={item.receiptImage} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-[#8a32c6] hover:text-[#7828b0] p-1" title="View Receipt Document">
-                            <img src={item.receiptImage} alt="Receipt" className="w-7 h-7 object-cover rounded border border-neutral-200 shadow-xs" />
-                            <FiFile size={12} />
-                          </a>
-                        )}
-                        <button
-                          onClick={() => confirmDelete('income', item._id)}
-                          className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
-                          title="Delete Income"
-                        >
-                          <FiTrash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center py-6 text-neutral-400 italic">No income logs found.</td>
+                  <td colSpan="8" className="text-center py-8 text-neutral-400 italic">
+                    No income or expense transactions logged for the selected filters.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -685,20 +738,72 @@ const Finance = () => {
                 </div>
               </div>
 
-              <div>
+              <div ref={sourceDropdownRef} style={{ position: 'relative' }}>
                 <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Source (Company / Client)*</label>
                 <input 
                   type="text" 
                   required 
-                  placeholder="Acme Corp (Letters only)" 
+                  placeholder="Select or type company / client name" 
                   value={incomeForm.source}
-                  onChange={(e) => setIncomeForm({ ...incomeForm, source: e.target.value })}
+                  onChange={(e) => {
+                    setIncomeForm({ ...incomeForm, source: e.target.value });
+                    setShowSourceDropdown(true);
+                  }}
+                  onFocus={() => setShowSourceDropdown(true)}
                   onBlur={() => setIncomeTouched({ ...incomeTouched, source: true })}
                   style={{ ...INPUT, borderColor: (incomeTouched.source && !isIncomeSourceValid) ? '#ef4444' : INPUT.border }}
-                  onFocus={onFocus}
                 />
+                {showSourceDropdown && (() => {
+                  const q = incomeForm.source.toLowerCase();
+                  const filtered = businessClients.filter(b => 
+                    b.businessName?.toLowerCase().includes(q)
+                  );
+                  return filtered.length > 0 ? (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
+                      background: '#ffffff', border: '1px solid rgba(138,50,198,0.25)',
+                      boxShadow: '0 6px 20px rgba(138,50,198,0.12)',
+                      maxHeight: 180, overflowY: 'auto', marginTop: 2
+                    }}>
+                      {filtered.map(b => (
+                        <div
+                          key={b._id}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setIncomeForm(prev => ({
+                              ...prev,
+                              source: b.businessName,
+                              businessName: b.businessName || prev.businessName
+                            }));
+                            setShowSourceDropdown(false);
+                          }}
+                          style={{
+                            padding: '8px 12px', cursor: 'pointer',
+                            fontSize: 11, fontFamily: 'Montserrat, sans-serif',
+                            borderBottom: '1px solid rgba(138,50,198,0.07)',
+                            transition: 'background 0.1s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(138,50,198,0.06)'}
+                          onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                        >
+                          <span style={{ fontWeight: 700, color: '#8a32c6' }}>{b.businessName}</span>
+                          {b.agentName && (
+                            <span style={{ color: '#76726a', marginLeft: 8, fontWeight: 400 }}>
+                              ({b.agentName})
+                            </span>
+                          )}
+                          {b.location && (
+                            <span style={{ color: '#a5a198', marginLeft: 6, fontSize: 10 }}>
+                              · {b.location}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
                 {incomeTouched.source && !isIncomeSourceValid && (
-                  <span className="text-[9px] text-rose-500 block font-normal">Letters and spaces only</span>
+                  <span className="text-[9px] text-rose-500 block font-normal">Source is required</span>
                 )}
               </div>
 

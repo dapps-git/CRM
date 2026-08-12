@@ -238,18 +238,21 @@ const Business = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
+            type="button"
             onClick={handleExportExcel}
             className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 shadow-xs transition-colors text-[11px] font-bold"
           >
             <FiDownload size={11} /> Export Excel
           </button>
           <button
+            type="button"
             onClick={handleExportPDF}
             className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 shadow-xs transition-colors text-[11px] font-bold"
           >
             <FiDownload size={11} /> Export PDF
           </button>
           <button
+            type="button"
             onClick={() => { resetForm(); setIsModalOpen(true); }}
             style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', borderRadius: 6, background: '#8a32c6', color: '#fff', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', fontSize: 11, fontWeight: 700, boxShadow: '0 2px 8px rgba(138,50,198,0.25)', border: 'none' }}
             onMouseEnter={e => e.currentTarget.style.background = '#7828b0'}
@@ -279,6 +282,7 @@ const Business = () => {
           <span>Sort:</span>
           {[['businessName', 'Name'], ['date', 'Date']].map(([field, label]) => (
             <button
+              type="button"
               key={field}
               onClick={() => handleSort(field)}
               style={{
@@ -306,9 +310,9 @@ const Business = () => {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(138,50,198,0.12)', background: 'rgba(138,50,198,0.04)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(138,50,198,0.15)', background: 'rgba(138,50,198,0.06)' }}>
                   {['Business Name','Agent Name','Role','Contact','Location','Requirement','Date','Actions'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Actions' ? 'right' : 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8a32c6', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding: '11px 12px', textAlign: h === 'Actions' ? 'right' : 'left', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#8a32c6', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -339,13 +343,13 @@ const Business = () => {
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <button onClick={() => openEditModal(item)} title="Edit" style={{ color: '#8a32c6', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                        <button type="button" onClick={() => openEditModal(item)} title="Edit" style={{ color: '#8a32c6', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                           onMouseEnter={e => e.currentTarget.style.color = '#7828b0'}
                           onMouseLeave={e => e.currentTarget.style.color = '#8a32c6'}
                         >
                           <FiEdit size={13} />
                         </button>
-                        <button onClick={() => confirmDelete(item._id)} title="Delete" style={{ color: '#a5a198', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                        <button type="button" onClick={() => confirmDelete(item._id)} title="Delete" style={{ color: '#a5a198', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                           onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                           onMouseLeave={e => e.currentTarget.style.color = '#a5a198'}
                         >
@@ -396,6 +400,7 @@ const Business = () => {
           <div style={{ width: '100%', maxWidth: 480, background: '#ffffff', border: '1px solid rgba(138,50,198,0.2)', borderRadius: 8, padding: '22px 20px', boxShadow: '0 16px 40px rgba(0,0,0,0.12)', position: 'relative' }}>
 
             <button
+              type="button"
               onClick={() => setIsModalOpen(false)}
               style={{ position: 'absolute', right: 14, top: 14, background: 'none', border: 'none', color: '#a5a198', cursor: 'pointer', padding: 4 }}
               onMouseEnter={e => e.currentTarget.style.color = '#2c2438'}

@@ -13,6 +13,7 @@ import {
   FiLogOut, 
   FiMenu, 
   FiX,
+  FiEdit3
 } from 'react-icons/fi';
 import logoImg from '../assets/logo.png';
 
@@ -37,6 +38,7 @@ const Layout = ({ children }) => {
     { name: 'Members',          path: '/members',   icon: FiUsers },
     { name: 'Leave Management', path: '/leaves',    icon: FiCalendar },
     { name: 'Reports',          path: '/reports',   icon: FiFileText },
+    { name: 'Notes',            path: '/notes',     icon: FiEdit3 },
     { name: 'Settings',         path: '/settings',  icon: FiSettings },
   ];
 
@@ -58,7 +60,7 @@ const Layout = ({ children }) => {
             onError={(e) => { e.target.src = logoImg; }}
           />
         </div>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded text-white">
+        <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded text-white">
           {sidebarOpen ? <FiX size={22} /> : <FiMenu size={22} />}
         </button>
       </div>
@@ -97,17 +99,18 @@ const Layout = ({ children }) => {
                   key={item.name}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-[12px] font-semibold tracking-wide transition-all duration-150"
+                  className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium tracking-wide transition-all duration-150"
                   style={isActive ? {
                     background: '#f4ce41', // Gold active background pill
                     color: '#2c2438',      // Dark text
+                    fontWeight: '600',
                   } : {
                     color: '#eddff9',      // Soft purple text
                   }}
                   onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}}
                   onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#eddff9'; }}}
                 >
-                  <Icon size={15} style={{ color: isActive ? '#2c2438' : '#eddff9' }} />
+                  <Icon size={16} style={{ color: isActive ? '#2c2438' : '#eddff9' }} />
                   <span>{item.name}</span>
                 </Link>
               );
@@ -118,23 +121,24 @@ const Layout = ({ children }) => {
         {/* Sidebar Footer — Always visible at bottom */}
         <div className="p-3 border-t border-purple-400/20 flex-shrink-0 bg-[#8a32c6]">
           <div className="flex items-center space-x-3 px-3 py-2.5 mb-2 text-purple-100">
-            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-xs border border-white/20">
+            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-semibold text-xs border border-white/20">
               A
             </div>
             <div>
-              <div className="text-[12px] font-semibold">Admin</div>
-              <div className="text-[10px] font-mono text-purple-200 truncate w-36">{user?.email}</div>
+              <div className="text-[13px] font-semibold">Admin</div>
+              <div className="text-[11.5px] font-medium text-purple-200 truncate w-36">{user?.email}</div>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-[12px] font-semibold tracking-wide transition-colors"
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors"
             style={{ color: '#ffb3b3' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            <FiLogOut size={14} />
+            <FiLogOut size={15} />
             <span>Sign Out</span>
           </button>
         </div>
@@ -159,18 +163,18 @@ const Layout = ({ children }) => {
             borderBottom: '1px solid rgba(138, 50, 198, 0.1)',
           }}
         >
-          <div className="flex items-center space-x-3 text-[11px] font-medium text-neutral-500">
+          <div className="flex items-center space-x-3 text-xs font-medium text-neutral-500">
             <span>
               {currentTime.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
             <span className="text-neutral-300">│</span>
-            <span className="font-mono text-brand-600" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            <span className="font-semibold text-[#8a32c6]">
               {currentTime.toLocaleTimeString()}
             </span>
           </div>
 
-          <div className="text-sm font-semibold text-neutral-600">
-            Welcome back, <span className="text-brand-600 font-bold">Admin 👋</span>
+          <div className="text-sm font-medium text-neutral-600">
+            Welcome back, <span className="text-[#8a32c6] font-semibold">Admin 👋</span>
           </div>
         </header>
 

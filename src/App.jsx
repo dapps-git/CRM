@@ -17,10 +17,11 @@ import Leaves from './pages/Leaves';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Invoice from './pages/Invoice';
+import Notes from './pages/Notes';
 
 // Protected Route — checks if user is logged in
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth() || {};
 
   if (loading) {
     return (
@@ -42,7 +43,7 @@ const ProtectedRoute = ({ children }) => {
 
 // Public Route — if already logged in, redirect to dashboard
 const PublicRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth() || {};
 
   if (loading) return null;
 
@@ -69,6 +70,7 @@ const App = () => {
           <Route path="/members" element={<ProtectedRoute><Layout><Members /></Layout></ProtectedRoute>} />
           <Route path="/leaves" element={<ProtectedRoute><Layout><Leaves /></Layout></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
+          <Route path="/notes" element={<ProtectedRoute><Layout><Notes /></Layout></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
 
           {/* Fallback */}

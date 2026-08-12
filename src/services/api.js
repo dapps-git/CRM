@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const rawBase = import.meta.env.VITE_API_URL || 'https://tweaki.pw/crm';
+const rawBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const cleanBase = rawBase.replace(/\/+$/, '');
 const baseURL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 
@@ -28,20 +28,10 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Auto-logout on expired / invalid token (401)
+// Response interceptor - handle errors gracefully without forcing logouts on button clicks
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      const code = error.response?.data?.code;
-      // Only force logout if the token is explicitly expired or invalid
-      if (code === 'TOKEN_EXPIRED' || code === 'TOKEN_INVALID' || code === 'USER_NOT_FOUND' || error.config?.url?.includes('/auth/me')) {
-        localStorage.removeItem('token');
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
-      }
-    }
     return Promise.reject(error);
   }
 );

@@ -47,7 +47,7 @@ export default {
       fontFamily: {
         sans: ['Montserrat', 'sans-serif'],
         display: ['Montserrat', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        mono: ['Montserrat', 'sans-serif'],
       },
       fontSize: {
         '2xs': ['10px', { lineHeight: '1.4', letterSpacing: '0.02em' }],

@@ -120,7 +120,7 @@ const Login = () => {
         style={{
           background: 'linear-gradient(145deg, #8a32c6 0%, #681ea8 100%)',
           border: '1px solid rgba(244, 206, 65, 0.35)',
-          borderRadius: '1.5rem',
+          borderRadius: '0',
           boxShadow: '0 25px 60px rgba(138,50,198,0.35), 0 0 40px rgba(138,50,198,0.15)',
           padding: '2.5rem 2rem',
           overflow: 'hidden',
@@ -155,7 +155,7 @@ const Login = () => {
                   <input
                     id="login-email" type="email" required placeholder="your@email.com"
                     value={email} onChange={e => setEmail(e.target.value)}
-                    style={{ ...INPUT_BASE, width: '100%', padding: '11px 12px 11px 38px', borderRadius: '0.75rem' }}
+                    style={{ ...INPUT_BASE, width: '100%', padding: '11px 12px 11px 38px', borderRadius: '0' }}
                     onFocus={e => Object.assign(e.target.style, INPUT_FOCUS)}
                     onBlur={e => Object.assign(e.target.style, INPUT_BLUR)}
                   />
@@ -163,12 +163,8 @@ const Login = () => {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="mb-2">
                   <label style={LABEL_STYLE}>Password</label>
-                  <button type="button" onClick={() => setStage('forgot_email')}
-                    style={{ fontSize: '10px', color: '#f4ce41', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', border: 'none', background: 'none', cursor: 'pointer' }}>
-                    Forgot?
-                  </button>
                 </div>
                 <div className="relative">
                   <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: '#8a32c6', fontSize: 15 }} />

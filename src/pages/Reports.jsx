@@ -85,7 +85,10 @@ const Reports = () => {
         headers = ['Date','Amount','Source','Receiver','BusinessName','CommissionEnabled','CommissionAgent','CommissionAmount'];
         rows = (res.data.incomes || []).map(i => {
           const d = new Date(i.date);
-          const dateStr = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          const dateStr = `${day}/${month}/${year}`;
           return {
             Date: dateStr, Amount: i.amount, Source: i.source,
             Receiver: i.receiver, BusinessName: i.businessName || '',
@@ -96,25 +99,30 @@ const Reports = () => {
       } else if (type === 'expense') {
         res = await api.get('/expense', { params: { limit: 1000 } });
         headers = ['Date','Amount','Category','Reason','Description','Partner'];
+        const monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         rows = (res.data.expenses || []).map(i => {
           const d = new Date(i.date);
-          const dateStr = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+          const day = String(d.getDate()).padStart(2, '0');
+          const monthStr = monthsArr[d.getMonth()];
+          const year = d.getFullYear();
+          const dateStr = `${day}-${monthStr}-${year}`;
           return {
-            Date: dateStr, Amount: i.amount, Category: i.category,
+            Date: `="${dateStr}"`, Amount: i.amount, Category: i.category,
             Reason: i.reason, Description: i.description || '', Partner: i.partner,
           };
         });
       } else if (type === 'members') {
         res = await api.get('/member');
         headers = ['Name','PhoneNumber'];
-        rows = (res.data || []).map(i => ({ Name: i.name, PhoneNumber: i.phoneNumber }));
+        rows = (res.data || []).map(i => ({ Name: i.name, PhoneNumber: `="${i.phoneNumber || ''}"` }));
       } else if (type === 'leave') {
         const monthStr = new Date().toISOString().slice(0, 7);
         res = await api.get('/leave/summary', { params: { month: monthStr } });
         headers = ['MemberName','PresentDays','AbsentDays','CasualLeaves','SickLeaves','HalfDays','TotalLeaves'];
-        rows = (res.data || []).map(({ member, stats }) => ({
-          MemberName: member.name, PresentDays: stats.present, AbsentDays: stats.absent,
-          CasualLeaves: stats.casual, SickLeaves: stats.sick, HalfDays: stats.halfDay, TotalLeaves: stats.totalLeave,
+        const summaryList = res.data?.summary || [];
+        rows = summaryList.map(({ member, stats }) => ({
+          MemberName: member?.name || 'Unknown', PresentDays: stats?.present || 0, AbsentDays: stats?.absent || 0,
+          CasualLeaves: stats?.casual || 0, SickLeaves: stats?.sick || 0, HalfDays: stats?.halfDay || 0, TotalLeaves: stats?.totalLeave || 0,
         }));
       }
 
@@ -126,7 +134,7 @@ const Reports = () => {
       });
 
       const link = document.createElement('a');
-      link.setAttribute('href', URL.createObjectURL(new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })));
+      link.setAttribute('href', URL.createObjectURL(new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })));
       link.setAttribute('download', filename);
       link.click();
       toast.success(`${type.toUpperCase()} report generated`);
@@ -212,6 +220,7 @@ const Reports = () => {
               {/* Action buttons */}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
+                  type="button"
                   disabled={downloading}
                   onClick={() => handleExportCSV(report.id)}
                   style={{
@@ -234,6 +243,7 @@ const Reports = () => {
 
                 {report.hasPDF && (
                   <button
+                    type="button"
                     disabled={downloading}
                     onClick={handleExportPDF}
                     style={{

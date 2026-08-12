@@ -9,6 +9,7 @@ import logoImg from '../assets/logo.png';
 import invoiceLogo from '../assets/invoicelogo.webp';
 import ConfirmModal from '../components/ConfirmModal';
 import html2pdf from 'html2pdf.js';
+import { playAddSound, playDeleteSound, playSuccessSound } from '../utils/soundEffects';
 
 // Crisp SVG Data URIs for 100% html2canvas Icon Line Alignment
 const iconPhoneSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
@@ -41,13 +42,13 @@ const formatDateDMY = (dateInput) => {
 // Crisp SVG Data URI generator for Gold Invoice Number Badge
 const generateInvoiceBadgeSVG = (invNum) => {
   const text = invNum || 'INV-0001';
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="24" viewBox="0 0 96 24"><rect width="96" height="24" rx="5" fill="%23f4ce41"/><text x="48" y="16.5" font-family="Montserrat, sans-serif" font-weight="800" font-size="11" fill="%232b1947" text-anchor="middle">${text}</text></svg>`;
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="24" viewBox="0 0 96 24"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="96" height="24" rx="5" fill="%23f4ce41"/><text x="48" y="16.5" font-family="Montserrat, sans-serif" font-weight="800" font-size="11" fill="%232b1947" text-anchor="middle">${text}</text></svg>`;
 };
 
-// Crisp SVG Data URI generator for Balance Due Badge (Guarantees non-empty, 100% visible red badge in html2canvas)
+// Crisp SVG Data URI generator for Balance Due Badge (Guarantees 100% dead-center vertical text alignment in html2canvas PDF exports)
 const generateBalanceDueBadgeSVG = (amount) => {
   const formatted = (Number(amount) || 0).toLocaleString();
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="26" viewBox="0 0 180 26"><rect width="180" height="26" rx="6" fill="%23fee2e2" stroke="%23fca5a5" stroke-width="1.2"/><text x="12" y="17" font-family="Montserrat, sans-serif" font-weight="700" font-size="11" fill="%23991b1b">Balance Due :</text><text x="168" y="17" font-family="Montserrat, sans-serif" font-weight="800" font-size="12" fill="%23dc2626" text-anchor="end">₹${formatted}</text></svg>`;
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="26" viewBox="0 0 200 26"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="200" height="26" rx="6" fill="%23fff7d6" stroke="%23facc15" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif" font-size="11.5"><tspan x="8" font-weight="500" fill="%23685980">Balance Due</tspan><tspan x="78" font-weight="500" fill="%23685980"> : </tspan><tspan x="92" font-weight="500" fill="%232c1947">₹${formatted}</tspan></text></svg>`;
 };
 
 // Crisp SVG Data URI generator for Address Line (Locked icon + text image line guarantees 100% dead-center icon alignment in html2canvas)
@@ -65,7 +66,7 @@ const generateAddressLineSVG = (iconType, text) => {
   }
 
   const encodedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="22" viewBox="0 0 240 22"><g transform="translate(0, 2) scale(0.65)" fill="none" stroke="%232b1947" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</g><text x="24" y="15" font-family="Montserrat, sans-serif" font-weight="400" font-size="10.5" fill="%232b1947">${encodedText}</text></svg>`;
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="22" viewBox="0 0 240 22"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><g transform="translate(0, 2) scale(0.65)" fill="none" stroke="%232b1947" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</g><text x="24" y="15" font-family="Montserrat, sans-serif" font-weight="400" font-size="10.5" fill="%232b1947">${encodedText}</text></svg>`;
 };
 
 const Invoice = () => {
@@ -73,6 +74,12 @@ const Invoice = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  // Business client dropdown for auto-fill
+  const [businessClients, setBusinessClients] = useState([]);
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [isNewInvoiceMode, setIsNewInvoiceMode] = useState(false);
+  const clientDropdownRef = React.useRef(null);
 
   // Delete modal state
   const [deleteId, setDeleteId] = useState(null);
@@ -122,11 +129,11 @@ const Invoice = () => {
     terms: 'Due on receipt',
     dueDate: new Date().toISOString().split('T')[0],
     items: [
-      { title: 'Website Development', description: 'Custom responsive web application design & deployment', quantity: 1, rate: 15000, amount: 15000 }
+      { title: '', description: '', quantity: 1, rate: 0, amount: 0 }
     ],
-    totalAmount: 15000,
+    totalAmount: 0,
     receivedAmount: 0,
-    balanceDue: 15000
+    balanceDue: 0
   });
 
   const pdfRef = useRef(null);
@@ -154,12 +161,22 @@ const Invoice = () => {
 
       // Auto-generate invoice number if new
       if (!editingInvoiceId) {
-        const nextNum = (invRes.data?.total || 0) + 1;
-        setInvoiceForm(prev => ({
-          ...prev,
-          invoiceNumber: `INV-${String(nextNum).padStart(4, '0')}`
-        }));
+        try {
+          const numRes = await api.get('/invoice/next-number');
+          setInvoiceForm(prev => ({
+            ...prev,
+            invoiceNumber: numRes.data.invoiceNumber
+          }));
+        } catch {
+          // fallback: use total count
+          const nextNum = (invRes.data?.total || 0) + 1;
+          setInvoiceForm(prev => ({
+            ...prev,
+            invoiceNumber: `INV-${String(nextNum).padStart(4, '0')}`
+          }));
+        }
       }
+      fetchBusinessClients();
     } catch {
       toast.error('Failed to load invoice records');
     } finally {
@@ -199,6 +216,7 @@ const Invoice = () => {
   };
 
   const addItemRow = () => {
+    playAddSound();
     setInvoiceForm({
       ...invoiceForm,
       items: [
@@ -212,6 +230,7 @@ const Invoice = () => {
     if (invoiceForm.items.length === 1) {
       return toast.error('Invoice must have at least one item');
     }
+    playDeleteSound();
     const updated = invoiceForm.items.filter((_, i) => i !== index);
     setInvoiceForm({ ...invoiceForm, items: updated });
   };
@@ -254,6 +273,13 @@ const Invoice = () => {
       return null;
     }
 
+    // Check all item rows have a title
+    const emptyItemIndex = invoiceForm.items.findIndex(item => !item.title?.trim());
+    if (emptyItemIndex !== -1) {
+      toast.error(`Item ${emptyItemIndex + 1}: Please enter a service title`);
+      return null;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -286,9 +312,13 @@ const Invoice = () => {
 
     window.scrollTo(0, 0);
 
+    // Dynamically measure exact rendered height so wave + Thank You are never cut off
+    const actualHeight = Math.max(1040, element.scrollHeight);
+
+    const clientNameForFile = (saved.clientName || 'Invoice').toUpperCase().replace(/\s+/g, ' ').trim();
     const opt = {
       margin: 0,
-      filename: `${saved.invoiceNumber}_${saved.clientName.replace(/\s+/g, '_')}.pdf`,
+      filename: `${clientNameForFile} INVOICE.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
         scale: 2,
@@ -297,14 +327,19 @@ const Invoice = () => {
         scrollX: 0,
         scrollY: 0,
         windowWidth: 790,
-        width: 790
+        width: 790,
+        height: actualHeight,
+        backgroundColor: '#2b1947'
       },
-      jsPDF: { unit: 'px', format: [790, 1050], orientation: 'portrait' }
+      jsPDF: { unit: 'px', format: [790, actualHeight], orientation: 'portrait' }
     };
 
     try {
       await html2pdf().set(opt).from(element).save();
+      playSuccessSound();
       toast.success('Invoice PDF downloaded!', { id: 'pdf-gen' });
+      // Auto-reset all inputs and change invoice number to next number
+      await startNewInvoice();
     } catch (err) {
       console.error(err);
       toast.error('Failed to generate PDF file', { id: 'pdf-gen' });
@@ -332,10 +367,24 @@ const Invoice = () => {
     setActiveTab('editor');
   };
 
-  // Create New Invoice
-  const startNewInvoice = () => {
+  // Fetch Business Clients for dropdown
+  const fetchBusinessClients = async () => {
+    try {
+      const res = await api.get('/business', { params: { limit: 200 } });
+      setBusinessClients(res.data?.businesses || []);
+    } catch { /* silent fail */ }
+  };
+
+  // Create New Invoice — fetch next number from backend
+  const startNewInvoice = async () => {
     setEditingInvoiceId(null);
-    const nextNum = `INV-${String(invoices.length + 1).padStart(4, '0')}`;
+    setIsNewInvoiceMode(true);
+    setShowClientDropdown(false);
+    let nextNum = `INV-${String(invoices.length + 1).padStart(4, '0')}`;
+    try {
+      const res = await api.get('/invoice/next-number');
+      nextNum = res.data.invoiceNumber;
+    } catch { /* use fallback */ }
     setInvoiceForm({
       invoiceNumber: nextNum,
       clientName: '',
@@ -346,14 +395,26 @@ const Invoice = () => {
       terms: 'Due on receipt',
       dueDate: new Date().toISOString().split('T')[0],
       items: [
-        { title: 'Website Development', description: 'Custom responsive web application design & deployment', quantity: 1, rate: 15000, amount: 15000 }
+        { title: '', description: '', quantity: 1, rate: 0, amount: 0 }
       ],
-      totalAmount: 15000,
+      totalAmount: 0,
       receivedAmount: 0,
-      balanceDue: 15000
+      balanceDue: 0
     });
+    fetchBusinessClients();
     setActiveTab('editor');
   };
+
+  // Close client dropdown on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(e.target)) {
+        setShowClientDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const confirmDelete = (id) => setDeleteId(id);
 
@@ -403,6 +464,7 @@ const Invoice = () => {
         <div className="flex items-center space-x-2">
           <div className="bg-white border border-neutral-200 p-0.5 rounded-md flex space-x-1">
             <button
+              type="button"
               onClick={() => setActiveTab('list')}
               className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${activeTab === 'list' ? 'bg-[#8a32c6] text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
@@ -410,7 +472,8 @@ const Invoice = () => {
               All Clients & Invoices ({invoices.length})
             </button>
             <button
-              onClick={() => setActiveTab('editor')}
+              type="button"
+              onClick={() => { setIsNewInvoiceMode(false); setActiveTab('editor'); }}
               className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-colors ${activeTab === 'editor' ? 'bg-[#8a32c6] text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
             >
@@ -419,6 +482,7 @@ const Invoice = () => {
           </div>
 
           <button
+            type="button"
             onClick={startNewInvoice}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#8a32c6] hover:bg-[#7828b0] text-white text-[11px] font-bold shadow-xs transition-colors"
           >
@@ -442,7 +506,6 @@ const Invoice = () => {
               onBlur={onBlur}
             />
           </div>
-
           <div className="bg-white border border-neutral-200/60 rounded-lg overflow-hidden shadow-xs">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-3">
@@ -451,30 +514,30 @@ const Invoice = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-2xs border-collapse">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-neutral-100 bg-neutral-50/50 text-neutral-400 font-bold uppercase tracking-wider">
-                      <th className="py-2.5 px-3">Inv No</th>
-                      <th className="py-2.5 px-3">Client Name</th>
-                      <th className="py-2.5 px-3">Contact</th>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Total Amount</th>
-                      <th className="py-2.5 px-3">Balance Due</th>
-                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    <tr className="border-b border-purple-100 bg-purple-50/70 text-[#8a32c6] font-semibold uppercase tracking-wider">
+                      <th className="py-3 px-3.5 font-semibold">Inv No</th>
+                      <th className="py-3 px-3.5 font-semibold">Client Name</th>
+                      <th className="py-3 px-3.5 font-semibold">Contact</th>
+                      <th className="py-3 px-3.5 font-semibold">Date</th>
+                      <th className="py-3 px-3.5 font-semibold">Total Amount</th>
+                      <th className="py-3 px-3.5 font-semibold">Balance Due</th>
+                      <th className="py-3 px-3.5 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-purple-100/60 font-medium">
                     {invoices.length > 0 ? (
                       invoices.map((inv) => (
-                        <tr key={inv._id} className="hover:bg-neutral-50/50 transition-colors">
-                          <td className="py-2.5 px-3 font-mono font-bold text-[#8a32c6]">{inv.invoiceNumber}</td>
-                          <td className="py-2.5 px-3 font-bold text-neutral-800">{inv.clientName}</td>
-                          <td className="py-2.5 px-3 font-mono text-neutral-500">{inv.clientPhone || inv.clientEmail || '—'}</td>
-                          <td className="py-2.5 px-3 font-mono text-neutral-500">
+                        <tr key={inv._id} className="hover:bg-purple-50/30 transition-colors">
+                          <td className="py-3 px-3.5 font-medium text-[#8a32c6]">{inv.invoiceNumber}</td>
+                          <td className="py-3 px-3.5 font-medium text-neutral-900">{inv.clientName}</td>
+                          <td className="py-3 px-3.5 text-neutral-500">{inv.clientPhone || inv.clientEmail || '—'}</td>
+                          <td className="py-3 px-3.5 text-neutral-500">
                             {inv.invoiceDate ? formatDateDMY(inv.invoiceDate) : ''}
                           </td>
-                          <td className="py-2.5 px-3 font-bold font-mono text-neutral-800">₹{inv.totalAmount?.toLocaleString()}</td>
-                          <td className="py-2.5 px-3 font-bold font-mono text-rose-600">₹{inv.balanceDue?.toLocaleString()}</td>
+                          <td className="py-3 px-3.5 font-medium text-neutral-900">₹{inv.totalAmount?.toLocaleString()}</td>
+                          <td className="py-3 px-3.5 font-medium text-rose-600">₹{inv.balanceDue?.toLocaleString()}</td>
                           <td className="py-2.5 px-3 text-right">
                             <div className="inline-flex items-center space-x-2">
                               <button
@@ -585,18 +648,73 @@ const Invoice = () => {
             <div className="border-t border-neutral-100 pt-3 space-y-2 text-2xs font-semibold">
               <h3 className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Bill To (Client Information)</h3>
 
-              <div>
+              {/* Client Name with Business Dropdown */}
+              <div ref={clientDropdownRef} style={{ position: 'relative' }}>
                 <label className="block text-neutral-500 mb-1">Client Name*</label>
                 <input
                   type="text"
                   required
                   placeholder="Acme Technologies"
                   value={invoiceForm.clientName}
-                  onChange={(e) => setInvoiceForm({ ...invoiceForm, clientName: e.target.value })}
+                  onChange={(e) => {
+                    setInvoiceForm({ ...invoiceForm, clientName: e.target.value });
+                    setIsNewInvoiceMode(false);
+                    setShowClientDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (!isNewInvoiceMode) setShowClientDropdown(true);
+                  }}
                   style={INPUT}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
                 />
+                {showClientDropdown && !isNewInvoiceMode && (() => {
+                  const q = invoiceForm.clientName.toLowerCase();
+                  const filtered = businessClients.filter(b =>
+                    b.businessName?.toLowerCase().includes(q)
+                  );
+                  return filtered.length > 0 ? (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
+                      background: '#ffffff', border: '1px solid rgba(138,50,198,0.25)',
+                      boxShadow: '0 6px 20px rgba(138,50,198,0.12)',
+                      maxHeight: 180, overflowY: 'auto', marginTop: 2
+                    }}>
+                      {filtered.map(b => (
+                        <div
+                          key={b._id}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setInvoiceForm(prev => ({
+                              ...prev,
+                              clientName: b.businessName,
+                              clientPhone: b.contactNumber || prev.clientPhone
+                            }));
+                            setShowClientDropdown(false);
+                          }}
+                          style={{
+                            padding: '8px 12px', cursor: 'pointer',
+                            fontSize: 11, fontFamily: 'Montserrat, sans-serif',
+                            borderBottom: '1px solid rgba(138,50,198,0.07)',
+                            transition: 'background 0.1s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(138,50,198,0.06)'}
+                          onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                        >
+                          <span style={{ fontWeight: 700, color: '#8a32c6' }}>{b.businessName}</span>
+                          {b.contactNumber && (
+                            <span style={{ color: '#76726a', marginLeft: 8, fontWeight: 400 }}>
+                              {b.contactNumber}
+                            </span>
+                          )}
+                          {b.location && (
+                            <span style={{ color: '#a5a198', marginLeft: 6, fontSize: 10 }}>
+                              · {b.location}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -788,9 +906,9 @@ const Invoice = () => {
                   onBlur={onBlur}
                 />
               </div>
-              <div className="flex justify-between items-center border-t border-neutral-100 pt-2 text-[#8a32c6]">
+              <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-2 text-[#8a32c6]">
                 <span className="font-bold">Balance Due:</span>
-                <span className="font-mono text-sm font-extrabold">₹{invoiceForm.balanceDue.toLocaleString()}</span>
+                <span className="font-medium text-sm">₹{invoiceForm.balanceDue.toLocaleString()}</span>
               </div>
             </div>
 
@@ -832,13 +950,19 @@ const Invoice = () => {
             </div>
 
             {/* Outer container for PDF snapshot matching reference invoice.png */}
-            <div className="bg-neutral-200 p-3 rounded-lg overflow-x-auto">
+            <div style={{
+              background: '#2b1947',
+              padding: '12px',
+              borderRadius: '8px',
+              overflowX: 'auto',
+              overflowY: 'hidden'
+            }}>
               <div
                 id="pdf-invoice-print-area"
                 ref={pdfRef}
                 style={{
                   width: '790px',
-                  minHeight: '1050px',
+                  minHeight: '1040px',
                   background: '#2b1947',
                   color: '#2b1c40',
                   fontFamily: 'Montserrat, sans-serif',
@@ -891,37 +1015,41 @@ const Invoice = () => {
                     </div>
 
                     {/* Top Right: INVOICE title + Gold pill + Dates */}
-                    <div style={{ paddingTop: '85px' }}>
+                    <div style={{ paddingTop: '40px' }}>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '18.5px', fontWeight: '600', color: '#2b1947', letterSpacing: '0.08em', lineHeight: '1.2', marginBottom: '6px' }}>
+                        <div style={{ fontSize: '17px', fontWeight: '600', color: '#2b1947', letterSpacing: '0.08em', lineHeight: '1.2', marginBottom: '4px' }}>
                           INVOICE
                         </div>
-                        <div style={{ marginBottom: '12px', textAlign: 'right' }}>
-                          <img 
-                            src={generateInvoiceBadgeSVG(invoiceForm.invoiceNumber)} 
+                        <div style={{ marginBottom: '8px', textAlign: 'right' }}>
+                          <img
+                            src={generateInvoiceBadgeSVG(invoiceForm.invoiceNumber)}
                             alt={invoiceForm.invoiceNumber}
-                            style={{ height: '22px', display: 'inline-block' }}
+                            style={{ height: '20px', display: 'inline-block' }}
                           />
                         </div>
-                        <table style={{ borderCollapse: 'collapse', marginLeft: 'auto', fontSize: '10.5px', color: '#685980', lineHeight: '1.7' }}>
+                        <table style={{ borderCollapse: 'collapse', marginLeft: 'auto', fontSize: '11.5px', color: '#685980', lineHeight: '1.5' }}>
                           <tbody>
                             <tr>
-                              <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '4px' }}>Invoice Date :</td>
-                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '4px', width: '100px' }}>{formatDateDMY(invoiceForm.invoiceDate)}</td>
+                              <td style={{ color: '#685980', fontWeight: '500', textAlign: 'left', paddingRight: '4px', paddingBottom: '4px', fontSize: '11.5px' }}>Invoice Date</td>
+                              <td style={{ color: '#685980', fontWeight: '500', textAlign: 'center', width: '14px', paddingBottom: '4px', fontSize: '11.5px' }}>:</td>
+                              <td style={{ fontWeight: '500', color: '#2c1947', textAlign: 'left', paddingLeft: '4px', paddingBottom: '4px', width: '100px', fontSize: '11.5px' }}>{formatDateDMY(invoiceForm.invoiceDate)}</td>
                             </tr>
                             <tr>
-                              <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '4px' }}>Terms :</td>
-                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '4px', width: '100px', whiteSpace: 'nowrap' }}>{invoiceForm.terms}</td>
+                              <td style={{ color: '#685980', fontWeight: '500', textAlign: 'left', paddingRight: '4px', paddingBottom: '4px', fontSize: '11.5px' }}>Terms</td>
+                              <td style={{ color: '#685980', fontWeight: '500', textAlign: 'center', width: '14px', paddingBottom: '4px', fontSize: '11.5px' }}>:</td>
+                              <td style={{ fontWeight: '500', color: '#2c1947', textAlign: 'left', paddingLeft: '4px', paddingBottom: '4px', width: '100px', whiteSpace: 'nowrap', fontSize: '11.5px' }}>{invoiceForm.terms}</td>
                             </tr>
                             <tr>
-                              <td style={{ color: '#685980', fontWeight: '600', textAlign: 'right', paddingRight: '8px', paddingBottom: '6px' }}>Due Date :</td>
-                              <td style={{ fontWeight: '700', color: '#2c1947', textAlign: 'left', paddingBottom: '6px', width: '100px' }}>{formatDateDMY(invoiceForm.dueDate)}</td>
+                              <td style={{ color: '#685980', fontWeight: '500', textAlign: 'left', paddingRight: '4px', paddingBottom: '10px', fontSize: '11.5px' }}>Due Date</td>
+                              <td style={{ color: '#685980', fontWeight: '500', textAlign: 'center', width: '14px', paddingBottom: '10px', fontSize: '11.5px' }}>:</td>
+                              <td style={{ fontWeight: '500', color: '#2c1947', textAlign: 'left', paddingLeft: '4px', paddingBottom: '10px', width: '100px', fontSize: '11.5px' }}>{formatDateDMY(invoiceForm.dueDate)}</td>
                             </tr>
+                            {/* Balance Due row SVG badge guarantees 100% pixel-perfect vertical centering in html2canvas PDF exports */}
                             <tr>
-                              <td colSpan="2" style={{ paddingTop: '4px', textAlign: 'right' }}>
-                                <img 
-                                  src={generateBalanceDueBadgeSVG(invoiceForm.balanceDue)} 
-                                  alt="Balance Due" 
+                              <td colSpan="3" style={{ paddingTop: '6px', textAlign: 'left' }}>
+                                <img
+                                  src={generateBalanceDueBadgeSVG(invoiceForm.balanceDue)}
+                                  alt="Balance Due"
                                   style={{ height: '26px', display: 'inline-block' }}
                                 />
                               </td>
@@ -937,156 +1065,171 @@ const Invoice = () => {
                     <span style={{ fontWeight: '800', color: '#2b1947', marginRight: '8px' }}>
                       Bill TO :
                     </span>
-                    <span style={{ fontWeight: '700', color: '#2b1947' }}>
-                      {[
-                        invoiceForm.clientName,
-                        invoiceForm.clientPhone,
-                        invoiceForm.clientEmail,
-                        invoiceForm.clientAddress
-                      ].filter(Boolean).join(', ') || 'Client Name'}
+                    <span style={{ fontWeight: '800', color: '#2b1947' }}>
+                      {invoiceForm.clientName || 'Client Name'}
                     </span>
+                    {[invoiceForm.clientPhone, invoiceForm.clientEmail, invoiceForm.clientAddress].filter(Boolean).length > 0 && (
+                      <span style={{ fontWeight: '400', color: '#4a3f6b' }}>
+                        {', ' + [invoiceForm.clientPhone, invoiceForm.clientEmail, invoiceForm.clientAddress].filter(Boolean).join(', ')}
+                      </span>
+                    )}
                   </div>
+
                 </div>
 
                 {/* ── Top Curved Transition to Dark Purple Section ── */}
-                <div style={{ margin: '0 0 -1px 0', overflow: 'hidden', lineHeight: 0, background: '#ffffff' }}>
-                  <svg viewBox="0 0 790 50" style={{ width: '790px', height: '50px', display: 'block' }}>
-                    <path d="M 0,0 Q 395,70 790,0 L 790,50 L 0,50 Z" fill="#2b1947" />
+                <div style={{ marginTop: '-1px', marginBottom: '-1px', overflow: 'hidden', lineHeight: 0, background: '#ffffff', border: 'none' }}>
+                  <svg viewBox="0 0 790 50" style={{ width: '790px', height: '50px', display: 'block', border: 'none' }}>
+                    <path d="M 0,0 Q 395,70 790,0 L 790,50 L 0,50 Z" fill="#2b1947" stroke="#2b1947" strokeWidth="1" />
                   </svg>
                 </div>
 
                 {/* ── LOWER SECTION: Dark Purple (#2b1947) Background Wrapper ── */}
                 <div style={{
                   background: '#2b1947',
-                  padding: '0 36px 36px 36px',
+                  padding: '0 36px 40px 36px',
+                  minHeight: '670px',
                   flex: 1,
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'flex-start',
                   gap: '16px',
-                  position: 'relative'
+                  position: 'relative',
+                  boxSizing: 'border-box'
                 }}>
 
                   {/* ── Large White Table Card Container ── */}
                   <div style={{
                     background: '#ffffff',
-                    borderRadius: '14px',
-                    padding: '14px',
+                    borderRadius: '18px',
+                    padding: '16px 16px 14px 16px',
                     marginBottom: '16px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                    border: '1.5px solid #d8cced',
+                    overflow: 'hidden'
                   }}>
-                    {/* Table with Vertical Grid Lines matching reference design */}
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5px' }}>
-                      <thead>
-                        <tr style={{ background: '#2b1947', color: '#ffffff' }}>
-                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '32px', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }}>#</th>
-                          <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Description</th>
-                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '75px', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Quantity</th>
-                          <th style={{ padding: '8px 6px', textAlign: 'right', width: '85px', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Rate</th>
-                          <th style={{ padding: '8px 10px', textAlign: 'right', width: '95px', fontWeight: '800', borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }}>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {invoiceForm.items.map((item, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid #e2d9f0' }}>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
-                              {idx + 1}
-                            </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 10px' : '12px 10px 14px 10px', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
-                              {/* Bold Title */}
-                              <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '11px', marginBottom: '2px' }}>
-                                {item.title || 'Service Title'}
-                              </div>
-                              {/* Description below title */}
-                              {item.description && (
-                                <div style={{ fontSize: '9px', color: '#685980', fontWeight: '500', lineHeight: '1.35', marginBottom: '2px' }}>
-                                  {item.description}
-                                </div>
-                              )}
-                            </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
-                              {item.quantity}
-                            </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'right', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0' }}>
-                              ₹{Number(item.rate).toLocaleString()}
-                            </td>
-                            <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 10px' : '12px 10px 14px 10px', textAlign: 'right', fontWeight: '800', fontFamily: 'JetBrains Mono, monospace', color: '#2b1947', verticalAlign: 'top' }}>
-                              ₹{Number(item.amount).toLocaleString()}
-                            </td>
+                    {/* Table Header Rounded Wrapper for html2canvas */}
+                    <div style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '10.5px' }}>
+                        <thead>
+                          <tr style={{ color: '#ffffff' }}>
+                            <th style={{ background: '#2b1947', padding: '9px 6px', textAlign: 'center', width: '32px', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)', borderTopLeftRadius: '10px' }}>#</th>
+                            <th style={{ background: '#2b1947', padding: '9px 10px', textAlign: 'left', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Description</th>
+                            <th style={{ background: '#2b1947', padding: '9px 6px', textAlign: 'center', width: '75px', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Quantity</th>
+                            <th style={{ background: '#2b1947', padding: '9px 6px', textAlign: 'center', width: '85px', fontWeight: '800', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Rate</th>
+                            <th style={{ background: '#2b1947', padding: '9px 10px', textAlign: 'center', width: '95px', fontWeight: '800', borderTopRightRadius: '10px' }}>Amount</th>
                           </tr>
-                        ))}
+                        </thead>
+                        <tbody>
+                          {invoiceForm.items.map((item, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', color: '#685980', verticalAlign: 'top', borderRight: '1px solid #e2d9f0', borderBottom: '1px solid #c9b8e0' }}>
+                                {idx + 1}
+                              </td>
+                              <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 10px' : '12px 10px 14px 10px', verticalAlign: 'top', borderRight: '1px solid #e2d9f0', borderBottom: '1px solid #c9b8e0' }}>
+                                {/* Bold Title */}
+                                <div style={{ fontWeight: '800', color: '#2c1947', fontSize: '11px', marginBottom: '2px' }}>
+                                  {item.title || 'Service Title'}
+                                </div>
+                                {/* Description below title */}
+                                {item.description && (
+                                  <div style={{ fontSize: '9px', color: '#685980', fontWeight: '500', lineHeight: '1.35', marginBottom: '2px' }}>
+                                    {item.description}
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', fontFamily: 'Montserrat, sans-serif', fontSize: '10.5px', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0', borderBottom: '1px solid #c9b8e0' }}>
+                                {item.quantity}
+                              </td>
+                              <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 6px' : '12px 6px 14px 6px', textAlign: 'center', fontWeight: '700', fontFamily: 'Montserrat, sans-serif', fontSize: '10.5px', color: '#2c1947', verticalAlign: 'top', borderRight: '1px solid #e2d9f0', borderBottom: '1px solid #c9b8e0' }}>
+                                ₹{Number(item.rate).toLocaleString()}
+                              </td>
+                              <td style={{ padding: invoiceForm.items.length >= 5 ? '8px 10px' : '12px 10px 14px 10px', textAlign: 'center', fontWeight: '700', fontFamily: 'Montserrat, sans-serif', fontSize: '10.5px', color: '#2c1947', verticalAlign: 'top', borderBottom: '1px solid #c9b8e0' }}>
+                                ₹{Number(item.amount).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
 
-                      </tbody>
-                    </table>
+                        </tbody>
+                      </table>
+                    </div>
 
                     {/* ── Summary Totals Box inside Table Card Bottom Right ── */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                      <div style={{ width: '310px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ marginTop: '14px', paddingBottom: '0px' }}>
+                      <table style={{ width: '310px', marginLeft: 'auto', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+                        <tbody>
+                          {/* TOTAL AMOUNT */}
+                          <tr>
+                            <td style={{ background: '#2b1947', color: '#f4ce41', padding: '0 14px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px', textAlign: 'left', verticalAlign: 'middle', height: '30px' }}>
+                              <div style={{ lineHeight: '1', marginTop: '-9px' }}>TOTAL AMOUNT</div>
+                            </td>
+                            <td style={{ width: '100px', background: '#ffffff', border: '1px solid #c9bddb', borderLeft: 'none', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'Montserrat, sans-serif', textAlign: 'center', borderTopRightRadius: '6px', borderBottomRightRadius: '6px', verticalAlign: 'middle', height: '30px' }}>
+                              <div style={{ lineHeight: '1', marginTop: '-9px' }}>₹{invoiceForm.totalAmount.toLocaleString()}</div>
+                            </td>
+                          </tr>
 
-                        {/* TOTAL AMOUNT */}
-                        <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden' }}>
-                          <div style={{ flex: 1, background: '#2b1947', color: '#f4ce41', padding: '6px 12px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }}>
-                            TOTAL AMOUNT
-                          </div>
-                          <div style={{ padding: '6px 14px', background: '#ffffff', border: '1px solid #c9bddb', borderLeft: 'none', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '95px', textAlign: 'right', borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }}>
-                            ₹{invoiceForm.totalAmount.toLocaleString()}
-                          </div>
-                        </div>
+                          {/* RECEIVED AMOUNT */}
+                          <tr>
+                            <td style={{ background: '#2b1947', color: '#f4ce41', padding: '0 14px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px', textAlign: 'left', verticalAlign: 'middle', height: '30px' }}>
+                              <div style={{ lineHeight: '1', marginTop: '-9px' }}>RECEIVED AMOUNT</div>
+                            </td>
+                            <td style={{ width: '100px', background: '#ffffff', border: '1px solid #c9bddb', borderLeft: 'none', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'Montserrat, sans-serif', textAlign: 'center', borderTopRightRadius: '6px', borderBottomRightRadius: '6px', verticalAlign: 'middle', height: '30px' }}>
+                              <div style={{ lineHeight: '1', marginTop: '-9px' }}>₹{(Number(invoiceForm.receivedAmount) || 0).toLocaleString()}</div>
+                            </td>
+                          </tr>
 
-                        {/* RECEIVED AMOUNT */}
-                        <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden' }}>
-                          <div style={{ flex: 1, background: '#2b1947', color: '#f4ce41', padding: '6px 12px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }}>
-                            RECEIVED AMOUNT
-                          </div>
-                          <div style={{ padding: '6px 14px', background: '#ffffff', border: '1px solid #c9bddb', borderLeft: 'none', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'JetBrains Mono, monospace', minWidth: '95px', textAlign: 'right', borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }}>
-                            ₹{(Number(invoiceForm.receivedAmount) || 0).toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* BALANCE DUE */}
-                        <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden' }}>
-                          <div style={{ flex: 1, background: '#2b1947', color: '#f4ce41', padding: '6px 12px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }}>
-                            BALANCE DUE
-                          </div>
-                          <div style={{ padding: '6px 14px', background: '#ffffff', border: '1px solid #c9bddb', borderLeft: 'none', fontWeight: '800', fontSize: '12px', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', minWidth: '95px', textAlign: 'right', borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }}>
-                            ₹{invoiceForm.balanceDue.toLocaleString()}
-                          </div>
-                        </div>
-
-                      </div>
+                          {/* BALANCE DUE */}
+                          <tr>
+                            <td style={{ background: '#2b1947', color: '#f4ce41', padding: '0 14px', fontWeight: '800', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.05em', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px', textAlign: 'left', verticalAlign: 'middle', height: '30px' }}>
+                              <div style={{ lineHeight: '1', marginTop: '-9px' }}>BALANCE DUE</div>
+                            </td>
+                            <td style={{ width: '100px', background: '#ffffff', border: '1px solid #c9bddb', borderLeft: 'none', fontWeight: '800', fontSize: '12px', color: '#2c1947', fontFamily: 'Montserrat, sans-serif', textAlign: 'center', borderTopRightRadius: '6px', borderBottomRightRadius: '6px', verticalAlign: 'middle', height: '30px' }}>
+                              <div style={{ lineHeight: '1', marginTop: '-9px' }}>₹{invoiceForm.balanceDue.toLocaleString()}</div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
                   {/* ── Bottom Thank You Card Container matching reference design ── */}
                   <div style={{
                     background: '#ffffff',
-                    borderRadius: '16px',
+                    borderRadius: '18px',
                     padding: '14px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                    border: '1.5px solid #d8cced',
+                    overflow: 'hidden'
                   }}>
-                    <div style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      background: '#2b1947',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <FiHeart size={18} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: '900', color: '#2b1947', lineHeight: '1.2' }}>
-                        Thank You!
-                      </div>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#685980' }}>
-                        For Your Business
-                      </div>
-                    </div>
+                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                      <tbody>
+                        <tr>
+                          <td style={{ width: '42px', verticalAlign: 'top', paddingTop: '2px' }}>
+                            <div style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '50%',
+                              background: '#2b1947',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden'
+                            }}>
+                              <FiHeart size={20} />
+                            </div>
+                          </td>
+                          <td style={{ paddingLeft: '14px', verticalAlign: 'middle', paddingTop: '0px' }}>
+                            <div style={{ fontSize: '16px', fontWeight: '900', color: '#2b1947', lineHeight: '1.1', marginBottom: '2px', marginTop: '-6px' }}>
+                              Thank You!
+                            </div>
+                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#685980', lineHeight: '1.1', marginTop: '-1px' }}>
+                              For Your Business
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
                 </div>

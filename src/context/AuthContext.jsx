@@ -23,8 +23,10 @@ export const AuthProvider = ({ children }) => {
           setUser(res.data);
         } catch (error) {
           console.error('Session validation failed:', error);
-          localStorage.removeItem('token');
-          setUser(null);
+          if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            setUser(null);
+          }
         }
       }
       setLoading(false);
@@ -102,4 +104,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext) || {};
