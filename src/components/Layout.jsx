@@ -153,13 +153,13 @@ const Layout = ({ children }) => {
       )}
 
       {/* --- Main Content --- */}
-      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: '#faf8f5' }}>
+      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: 'rgb(254, 250, 224)' }}>
         
         {/* Top Navbar */}
         <header
           className="hidden md:flex items-center justify-between px-7 py-3.5"
           style={{
-            background: '#faf8f5',
+            background: 'rgb(254, 250, 224)',
             borderBottom: '1px solid rgba(138, 50, 198, 0.1)',
           }}
         >
@@ -179,7 +179,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 md:p-8" style={{ background: '#faf8f5' }}>
+        <main className="flex-1 p-6 md:p-8" style={{ background: 'rgb(254, 250, 224)' }}>
           {children}
         </main>
       </div>

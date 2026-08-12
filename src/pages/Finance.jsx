@@ -42,6 +42,7 @@ const Finance = () => {
   const [incomeModalOpen, setIncomeModalOpen] = useState(false);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editExpenseId, setEditExpenseId] = useState(null);
+  const [editIncomeId, setEditIncomeId] = useState(null);
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'income'|'expense', id: '...' }
@@ -164,30 +165,59 @@ const Finance = () => {
     }
 
     try {
-      await api.post('/income', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      playAddSound();
-      toast.success('Income transaction logged successfully');
-      setIncomeForm({
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        source: '',
-        receiver: 'Saleel VT',
-        businessName: '',
-        commissionEnabled: false,
-        commissionAgent: '',
-        commissionAmount: '',
-        receiptImage: null
-      });
-      setIncomeTouched({});
+      if (editIncomeId) {
+        await api.put(`/income/${editIncomeId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Income transaction updated successfully');
+      } else {
+        await api.post('/income', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        playAddSound();
+        toast.success('Income transaction logged successfully');
+      }
+      resetIncomeForm();
       setIncomeModalOpen(false);
       fetchFinanceData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to log income');
+      toast.error(err.response?.data?.message || 'Failed to save income');
     } finally {
       setSubmittingIncome(false);
     }
+  };
+
+  const openEditIncomeModal = (item) => {
+    setEditIncomeId(item._id);
+    setIncomeForm({
+      amount: item.amount || '',
+      date: item.date ? new Date(item.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      source: item.source || '',
+      receiver: item.receiver || 'Saleel VT',
+      businessName: item.businessName || '',
+      commissionEnabled: !!item.commissionEnabled,
+      commissionAgent: item.commissionAgent || '',
+      commissionAmount: item.commissionAmount || '',
+      receiptImage: null
+    });
+    setIncomeTouched({});
+    setIncomeModalOpen(true);
+  };
+
+  const resetIncomeForm = () => {
+    setEditIncomeId(null);
+    setIncomeForm({
+      amount: '',
+      date: new Date().toISOString().split('T')[0],
+      source: '',
+      receiver: 'Saleel VT',
+      businessName: '',
+      commissionEnabled: false,
+      commissionAgent: '',
+      commissionAmount: '',
+      receiptImage: null
+    });
+    setIncomeTouched({});
   };
 
   // Handle Expense Add / Edit with WebP image compression
@@ -418,7 +448,7 @@ const Finance = () => {
 
           <button
             type="button"
-            onClick={() => { setIncomeTouched({}); setIncomeModalOpen(true); }}
+            onClick={() => { resetIncomeForm(); setIncomeModalOpen(true); }}
             className="flex items-center space-x-1 px-3 py-1.5 rounded-md border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 shadow-xs transition-colors"
           >
             <FiPlus size={11} />
@@ -660,17 +690,15 @@ const Finance = () => {
                             <FiFile size={12} />
                           </a>
                         )}
-                        {/* Only Expense rows get an Edit button — Income rows are add-only */}
-                        {item.isExpense && (
-                          <button
-                            type="button"
-                            onClick={() => openEditExpenseModal(item.itemRef)}
-                            className="text-[#8a32c6] hover:text-[#7828b0] transition-colors p-1"
-                            title="Edit Expense"
-                          >
-                            <FiEdit size={13} />
-                          </button>
-                        )}
+                        {/* Edit button for both Expense and Income rows */}
+                        <button
+                          type="button"
+                          onClick={() => item.isExpense ? openEditExpenseModal(item.itemRef) : openEditIncomeModal(item.itemRef)}
+                          className="text-[#8a32c6] hover:text-[#7828b0] transition-colors p-1"
+                          title={`Edit ${item.type}`}
+                        >
+                          <FiEdit size={13} />
+                        </button>
                         <button
                           type="button"
                           onClick={() => confirmDelete(item.deleteType, item._id)}
@@ -705,7 +733,9 @@ const Finance = () => {
             >
               <FiX size={16} />
             </button>
-            <h3 className="text-xs font-bold text-[#8a32c6] uppercase tracking-widest mb-4">Log New Inflow</h3>
+            <h3 className="text-xs font-bold text-[#8a32c6] uppercase tracking-widest mb-4">
+              {editIncomeId ? 'Edit Income Transaction' : 'Log New Inflow'}
+            </h3>
             
             <form onSubmit={handleIncomeSubmit} className="space-y-3 text-2xs font-semibold">
               <div className="grid grid-cols-2 gap-3">
@@ -898,7 +928,7 @@ const Finance = () => {
                       <span>Saving...</span>
                     </>
                   ) : (
-                    <span>Log Income</span>
+                    <span>{editIncomeId ? 'Update Income' : 'Log Income'}</span>
                   )}
                 </button>
               </div>
