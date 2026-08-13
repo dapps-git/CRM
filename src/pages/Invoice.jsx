@@ -48,7 +48,8 @@ const generateInvoiceBadgeSVG = (invNum) => {
 // Crisp SVG Data URI generator for Balance Due Badge (Guarantees 100% dead-center vertical text alignment in html2canvas PDF exports)
 const generateBalanceDueBadgeSVG = (amount) => {
   const formatted = (Number(amount) || 0).toLocaleString();
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="26" viewBox="0 0 200 26"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="200" height="26" rx="6" fill="%23fff7d6" stroke="%23facc15" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif" font-size="11.5"><tspan x="8" font-weight="500" fill="%23685980">Balance Due</tspan><tspan x="78" font-weight="500" fill="%23685980"> : </tspan><tspan x="92" font-weight="500" fill="%232c1947">₹${formatted}</tspan></text></svg>`;
+  const svgWidth = Math.max(150, 125 + formatted.length * 8);
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="26" viewBox="0 0 ${svgWidth} 26"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="${svgWidth}" height="26" rx="6" fill="%23fef2f2" stroke="%23ef4444" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif"><tspan x="8" font-size="11.5" font-weight="600" fill="%23991b1b">Balance Due</tspan><tspan x="78" font-size="11.5" font-weight="600" fill="%23991b1b"> : </tspan><tspan x="88" font-size="13.5" font-weight="800" fill="%23dc2626">₹${formatted}</tspan></text></svg>`;
 };
 
 // Crisp SVG Data URI generator for Address Line (Locked icon + text image line guarantees 100% dead-center icon alignment in html2canvas)
@@ -906,9 +907,9 @@ const Invoice = () => {
                   onBlur={onBlur}
                 />
               </div>
-              <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-2 text-[#8a32c6]">
+              <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-2 text-rose-600">
                 <span className="font-bold">Balance Due:</span>
-                <span className="font-medium text-sm">₹{invoiceForm.balanceDue.toLocaleString()}</span>
+                <span className="font-bold text-base text-rose-600">₹{invoiceForm.balanceDue.toLocaleString()}</span>
               </div>
             </div>
 
