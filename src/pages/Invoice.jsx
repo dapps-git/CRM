@@ -49,7 +49,7 @@ const generateInvoiceBadgeSVG = (invNum) => {
 const generateBalanceDueBadgeSVG = (amount) => {
   const formatted = (Number(amount) || 0).toLocaleString();
   const svgWidth = Math.max(150, 125 + formatted.length * 8);
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="26" viewBox="0 0 ${svgWidth} 26"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="${svgWidth}" height="26" rx="6" fill="%23fef2f2" stroke="%23ef4444" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif"><tspan x="8" font-size="11.5" font-weight="600" fill="%23991b1b">Balance Due</tspan><tspan x="78" font-size="11.5" font-weight="600" fill="%23991b1b"> : </tspan><tspan x="88" font-size="13.5" font-weight="800" fill="%23dc2626">₹${formatted}</tspan></text></svg>`;
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="26" viewBox="0 0 ${svgWidth} 26" style="overflow:hidden;"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="${svgWidth}" height="26" rx="6" fill="%23fef2f2" stroke="%23ef4444" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif"><tspan x="8" font-size="11.5" font-weight="600" fill="%23991b1b">Balance Due</tspan><tspan x="78" font-size="11.5" font-weight="600" fill="%23991b1b"> : </tspan><tspan x="88" font-size="13.5" font-weight="800" fill="%23dc2626">₹${formatted}</tspan></text></svg>`;
 };
 
 // Crisp SVG Data URI generator for Address Line (Locked icon + text image line guarantees 100% dead-center icon alignment in html2canvas)
@@ -971,7 +971,8 @@ const Invoice = () => {
                   boxSizing: 'border-box',
                   margin: '0 auto',
                   display: 'flex',
-                  flexDirection: 'column'
+                  flexDirection: 'column',
+                  overflow: 'hidden'
                 }}
               >
                 {/* ── TOP SECTION (White Background) ── */}
@@ -1051,7 +1052,7 @@ const Invoice = () => {
                                 <img
                                   src={generateBalanceDueBadgeSVG(invoiceForm.balanceDue)}
                                   alt="Balance Due"
-                                  style={{ height: '26px', display: 'inline-block' }}
+                                  style={{ height: '26px', display: 'inline-block', overflow: 'hidden' }}
                                 />
                               </td>
                             </tr>

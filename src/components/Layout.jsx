@@ -48,7 +48,7 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row font-sans bg-neutral-50 text-neutral-800">
+    <div className="min-h-screen flex flex-col md:flex-row font-sans bg-neutral-50 text-neutral-800 overflow-x-hidden">
 
       {/* --- Mobile Header --- */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-[#8a32c6] text-white">
@@ -68,8 +68,8 @@ const Layout = ({ children }) => {
       {/* --- Sidebar --- */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 w-60 h-screen flex flex-col justify-between flex-shrink-0
-          transform transition-transform duration-300 md:translate-x-0 md:sticky md:top-0
+          fixed top-0 left-0 z-40 w-60 h-screen flex flex-col justify-between flex-shrink-0
+          transform transition-transform duration-300 md:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{
@@ -153,7 +153,7 @@ const Layout = ({ children }) => {
       )}
 
       {/* --- Main Content --- */}
-      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen" style={{ background: '#F3F4F6' }}>
+      <div className="flex-1 flex flex-col overflow-x-hidden min-h-screen md:ml-60" style={{ background: '#F3F4F6' }}>
 
         {/* Top Navbar */}
         <header
@@ -179,7 +179,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 md:p-8" style={{ background: '#F3F4F6' }}>
+        <main className="flex-1 p-6 md:p-8 overflow-x-hidden" style={{ background: '#F3F4F6' }}>
           {children}
         </main>
       </div>
