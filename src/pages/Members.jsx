@@ -359,10 +359,10 @@ const Members = () => {
                             <img
                               src={item.profileImage}
                               alt={item.name}
-                              className="w-14 h-14 rounded-full object-cover border-2 border-[#8a32c6] shadow-sm"
+                              className="w-20 h-20 rounded-full object-cover border-2 border-[#8a32c6] shadow-sm hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <div className="w-14 h-14 rounded-full bg-[#8a32c6]/10 text-[#8a32c6] flex items-center justify-center font-bold text-lg border-2 border-[#8a32c6]/30 shadow-xs">
+                            <div className="w-20 h-20 rounded-full bg-[#8a32c6]/10 text-[#8a32c6] flex items-center justify-center font-bold text-2xl border-2 border-[#8a32c6]/30 shadow-xs">
                               {item.name.charAt(0).toUpperCase()}
                             </div>
                           )}
@@ -370,12 +370,12 @@ const Members = () => {
 
                         <div>
                           <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">{item.name}</h3>
-                          <p className="text-[11px] text-purple-900 font-mono font-semibold mt-0.5">{item.phoneNumber}</p>
+                          <p className="text-xs text-purple-900 font-mono font-semibold mt-0.5">{item.phoneNumber}</p>
                           
                           {/* DOB Badge */}
                           {item.dob && (
-                            <div className="mt-1 flex items-center space-x-1 text-[10.5px] font-bold text-[#8a32c6]">
-                              <FiGift size={11} className="text-[#8a32c6]" />
+                            <div className="mt-1 flex items-center space-x-1 text-xs font-bold text-[#8a32c6]">
+                              <FiGift size={12} className="text-[#8a32c6]" />
                               <span>DOB: {formatDateDisplay(item.dob)}</span>
                             </div>
                           )}
@@ -414,19 +414,23 @@ const Members = () => {
 
                   {/* ID Proofs Badges on Member Card */}
                   {item.idProofs && item.idProofs.length > 0 ? (
-                    <div className="mt-4 pt-3 border-t border-purple-100/90 flex flex-wrap gap-2">
+                    <div className="mt-4 pt-3 border-t border-purple-100/90 flex flex-wrap gap-2.5">
                       {item.idProofs.map((idItem, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => setPreviewIdPhoto(idItem)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-[#8a32c6] border border-purple-200 text-[10px] font-bold rounded-md transition-colors"
-                          title="Click to view ID Photo"
+                          className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-purple-50/80 hover:bg-purple-100/90 text-[#8a32c6] border border-purple-200 text-xs font-bold rounded-lg transition-all cursor-pointer shadow-2xs hover:border-[#8a32c6]"
+                          title="Click to view full ID Photo"
                         >
-                          <FiFileText size={11} />
+                          <FiFileText size={13} />
                           <span>{idItem.idName}</span>
                           {idItem.idPhoto && (
-                            <img src={idItem.idPhoto} alt="" className="w-4 h-4 rounded object-cover border border-purple-300 ml-0.5" />
+                            <img
+                              src={idItem.idPhoto}
+                              alt={idItem.idName}
+                              className="w-12 h-12 rounded-md object-cover border-2 border-purple-300 ml-1 shadow-xs hover:scale-105 transition-transform"
+                            />
                           )}
                         </button>
                       ))}
