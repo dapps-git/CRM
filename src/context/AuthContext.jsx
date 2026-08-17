@@ -62,7 +62,6 @@ export const AuthProvider = ({ children }) => {
       toast.success(res.data.message || 'OTP verification code sent');
       return {
         success: true,
-        otp: res.data.otp,
         email: res.data.email,
         mobileNumber: res.data.mobileNumber || '9745307450'
       };

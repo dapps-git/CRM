@@ -84,12 +84,7 @@ const Login = () => {
     const res = await requestForgotPassword(targetEmail);
     setLoading(false);
     if (res.success) {
-      if (res.otp) {
-        setOtp(res.otp);
-        toast.success(`🔑 OTP Code: ${res.otp}`, { duration: 12000 });
-      } else {
-        setOtp('');
-      }
+      setOtp(''); // Require user to check crevionads@gmail.com inbox and type OTP manually
       setStage('forgot_reset');
     }
   };
