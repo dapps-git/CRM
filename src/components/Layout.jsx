@@ -36,6 +36,7 @@ const Layout = ({ children }) => {
     { name: 'Business Numbers', path: '/business', icon: FiBriefcase },
     { name: 'Expenses', path: '/finance', icon: FiDollarSign },
     { name: 'Invoice Module', path: '/invoice', icon: FiPrinter },
+    { name: 'PDF Store', path: '/pdfs', icon: FiFileText },
     { name: 'Domain Management', path: '/domains', icon: FiGlobe },
     { name: 'Server Management', path: '/servers', icon: FiServer },
     { name: 'Members', path: '/members', icon: FiUsers },

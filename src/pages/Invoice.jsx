@@ -3,6 +3,7 @@ import {
   FiFileText, FiPlus, FiTrash2, FiEdit, FiDownload,
   FiSearch, FiX, FiCheck, FiPrinter, FiEdit3, FiPhone, FiMail, FiGlobe, FiMapPin, FiHeart, FiUser
 } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import logoImg from '../assets/logo.png';
@@ -69,6 +70,18 @@ const generateAddressLineSVG = (iconType, text) => {
   return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="22" viewBox="0 0 240 22"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><g transform="translate(0, 2) scale(0.65)" fill="none" stroke="%232b1947" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</g><text x="24" y="15" font-family="Montserrat, sans-serif" font-weight="400" font-size="10.5" fill="%232b1947">${encodedText}</text></svg>`;
 };
 
+// Helper to parse numeric quantity from strings like "2 month", "15 days", "3", etc.
+const parseQuantityNumber = (val) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const str = String(val).trim();
+  const match = str.match(/^([0-9]+(?:\.[0-9]+)?)/);
+  if (match) {
+    return parseFloat(match[1]) || 0;
+  }
+  return Number(str) || 0;
+};
+
 const Invoice = () => {
   const [activeTab, setActiveTab] = useState('list'); // 'list' | 'editor'
   const [invoices, setInvoices] = useState([]);
@@ -96,6 +109,7 @@ const Invoice = () => {
   });
 
   const DEFAULT_SERVICES = [
+    { title: 'Google Ads', description: 'Google Ads campaign setup, keyword research, ad creation, targeting, optimization, monitoring, and performance management.' },
     { title: 'Meta Ads', description: 'Professional Meta Ads campaign setup, audience targeting, campaign management, optimization, and performance monitoring for Facebook and Instagram advertising.' },
     { title: 'Poster', description: 'Professional poster design services with creative layouts, premium visuals, and brand-focused design.' },
     { title: 'Video', description: 'Professional video editing with visual effects, sound optimization, subtitles, branding elements, and production-ready delivery.' },
@@ -190,7 +204,11 @@ const Invoice = () => {
 
   // Recalculate invoice totals when items or receivedAmount change
   useEffect(() => {
-    const total = invoiceForm.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const total = invoiceForm.items.reduce((sum, item) => {
+      const q = parseQuantityNumber(item.quantity);
+      const r = Number(item.rate) || 0;
+      return sum + (q * r);
+    }, 0);
     const received = Number(invoiceForm.receivedAmount) || 0;
     const balance = total - received;
 
@@ -207,7 +225,7 @@ const Invoice = () => {
     updatedItems[index][field] = value;
 
     if (field === 'quantity' || field === 'rate') {
-      const q = Number(updatedItems[index].quantity) || 0;
+      const q = parseQuantityNumber(updatedItems[index].quantity);
       const r = Number(updatedItems[index].rate) || 0;
       updatedItems[index].amount = q * r;
     }
@@ -244,6 +262,74 @@ const Invoice = () => {
     }
     setInvoiceForm({ ...invoiceForm, items: updatedItems });
     setActiveSuggestionIndex(null);
+  };
+
+  // Share Exact PDF Document File to WhatsApp
+  const handleShareWhatsApp = async (invForm = invoiceForm) => {
+    setActiveTab('editor');
+    setInvoiceForm(invForm);
+    const toastId = toast.loading('Generating PDF file for WhatsApp share...');
+
+    setTimeout(async () => {
+      if (!pdfRef.current) {
+        toast.dismiss(toastId);
+        return toast.error('Failed to generate PDF document');
+      }
+
+      const element = pdfRef.current;
+      const actualHeight = Math.max(1040, element.scrollHeight);
+      const clientNameForFile = (invForm.clientName || 'CLIENT').toUpperCase().replace(/\s+/g, ' ').trim();
+      const fileName = `${clientNameForFile} INVOICE.pdf`;
+
+      const opt = {
+        margin: 0,
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 790,
+          width: 790,
+          height: actualHeight,
+          backgroundColor: '#2b1947'
+        },
+        jsPDF: { unit: 'px', format: [790, actualHeight], orientation: 'portrait' }
+      };
+
+      try {
+        const pdfWorker = html2pdf().set(opt).from(element);
+        const pdfBlob = await pdfWorker.output('blob');
+        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+        toast.dismiss(toastId);
+
+        // Check native Web Share API with file attachment support (Only PDF file, No Text Body)
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          await navigator.share({
+            files: [pdfFile],
+            title: `Invoice ${invForm.invoiceNumber}`
+          });
+          playSuccessSound();
+          toast.success('PDF document shared to WhatsApp!');
+        } else {
+          // Download PDF file directly & open WhatsApp web
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(pdfBlob);
+          link.download = fileName;
+          link.click();
+
+          window.open('https://api.whatsapp.com/send', '_blank');
+          playSuccessSound();
+          toast.success(`Downloaded ${fileName}! Drop file into WhatsApp to send.`);
+        }
+      } catch (err) {
+        toast.dismiss(toastId);
+        window.open('https://api.whatsapp.com/send', '_blank');
+      }
+    }, 400);
   };
 
   // Save / Update Company Config
@@ -539,21 +625,30 @@ const Invoice = () => {
                           <td className="py-3 px-3.5 font-medium text-neutral-900">₹{inv.totalAmount?.toLocaleString()}</td>
                           <td className="py-3 px-3.5 font-medium text-rose-600">₹{inv.balanceDue?.toLocaleString()}</td>
                           <td className="py-2.5 px-3 text-right">
-                            <div className="inline-flex items-center space-x-2">
+                            <div className="inline-flex items-center space-x-3 justify-end">
                               <button
-                                onClick={() => openEditInvoice(inv)}
-                                className="text-[#8a32c6] hover:text-[#7828b0] p-1 font-semibold flex items-center space-x-1"
-                                title="Edit Invoice"
+                                type="button"
+                                onClick={() => handleShareWhatsApp(inv)}
+                                className="p-1 text-[#25D366] hover:text-[#128C7E] transition-transform hover:scale-115 cursor-pointer"
+                                title="Share Invoice on WhatsApp"
                               >
-                                <FiEdit size={13} />
-                                <span>Edit</span>
+                                <FaWhatsapp size={17} />
                               </button>
                               <button
+                                type="button"
+                                onClick={() => openEditInvoice(inv)}
+                                className="p-1 text-[#8a32c6] hover:text-[#6b21a8] transition-transform hover:scale-115 cursor-pointer"
+                                title="Edit Invoice"
+                              >
+                                <FiEdit size={16} />
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => confirmDelete(inv._id)}
-                                className="text-neutral-400 hover:text-rose-600 p-1"
+                                className="p-1 text-neutral-400 hover:text-rose-600 transition-transform hover:scale-115 cursor-pointer"
                                 title="Delete Invoice"
                               >
-                                <FiTrash2 size={13} />
+                                <FiTrash2 size={16} />
                               </button>
                             </div>
                           </td>
@@ -856,7 +951,8 @@ const Invoice = () => {
                     <div>
                       <label className="block text-neutral-500 mb-1">Qty</label>
                       <input
-                        type="number"
+                        type="text"
+                        placeholder="e.g. 1 or 2 month"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
                         style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
@@ -924,6 +1020,15 @@ const Invoice = () => {
               </button>
               <button
                 type="button"
+                onClick={() => handleShareWhatsApp(invoiceForm)}
+                className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase rounded-md shadow-xs transition-colors flex items-center justify-center space-x-1"
+                title="Share to WhatsApp"
+              >
+                <FaWhatsapp size={13} />
+                <span>WhatsApp</span>
+              </button>
+              <button
+                type="button"
                 onClick={handleGeneratePDF}
                 disabled={saving}
                 className="flex-1 py-2.5 bg-[#8a32c6] hover:bg-[#7828b0] text-white font-bold text-[10px] uppercase rounded-md shadow-xs transition-colors flex items-center justify-center space-x-1.5"
@@ -971,7 +1076,8 @@ const Invoice = () => {
                   margin: '0 auto',
                   display: 'flex',
                   flexDirection: 'column',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  paddingBottom: '24px'
                 }}
               >
                 {/* ── TOP SECTION (White Background) ── */}
