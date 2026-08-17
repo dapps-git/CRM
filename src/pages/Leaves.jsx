@@ -538,7 +538,7 @@ const Leaves = () => {
           >
             <option value="All Partners">All Partners ({members.length})</option>
             {members.map(m => (
-              <option key={m._id} value={m._id}>{m.name}</option>
+              <option key={m._id} value={m._id}>{m.name?.toUpperCase()}</option>
             ))}
           </select>
         </div>
@@ -606,7 +606,7 @@ const Leaves = () => {
                                 <div className="w-6 h-6 bg-gradient-to-br from-[#8a32c6] to-[#6d25a3] text-white font-extrabold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs">
                                   {member.name ? member.name.charAt(0).toUpperCase() : 'M'}
                                 </div>
-                                <span className="truncate font-bold text-xs text-neutral-900">{member.name}</span>
+                                <span className="truncate font-bold text-xs text-neutral-900 uppercase">{member.name}</span>
                               </div>
                               <button
                                 onClick={() => setCalendarMember(member)}
@@ -706,7 +706,7 @@ const Leaves = () => {
                         <FiUser size={17} />
                       </div>
                       <div>
-                        <div className="text-base font-semibold text-neutral-900">{member.name}</div>
+                        <div className="text-base font-bold text-neutral-900 uppercase">{member.name}</div>
                         <div className="text-xs text-neutral-500 font-normal">{member.phoneNumber || 'No Contact'}</div>
                       </div>
                     </div>
@@ -765,7 +765,7 @@ const Leaves = () => {
                 <FiCalendar size={19} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-[#8a32c6] tracking-tight">
+                <h3 className="text-base font-bold text-[#8a32c6] tracking-tight uppercase">
                   {calendarMember.name}'s Attendance Sheet
                 </h3>
                 <p className="text-xs text-neutral-500 font-medium">
