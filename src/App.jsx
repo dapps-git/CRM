@@ -18,6 +18,8 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Invoice from './pages/Invoice';
 import Notes from './pages/Notes';
+import Domains from './pages/Domains';
+import Servers from './pages/Servers';
 
 // Protected Route — checks if user is logged in
 const ProtectedRoute = ({ children }) => {
@@ -67,6 +69,8 @@ const App = () => {
           <Route path="/business" element={<ProtectedRoute><Layout><Business /></Layout></ProtectedRoute>} />
           <Route path="/finance" element={<ProtectedRoute><Layout><Finance /></Layout></ProtectedRoute>} />
           <Route path="/invoice" element={<ProtectedRoute><Layout><Invoice /></Layout></ProtectedRoute>} />
+          <Route path="/domains" element={<ProtectedRoute><Layout><Domains /></Layout></ProtectedRoute>} />
+          <Route path="/servers" element={<ProtectedRoute><Layout><Servers /></Layout></ProtectedRoute>} />
           <Route path="/members" element={<ProtectedRoute><Layout><Members /></Layout></ProtectedRoute>} />
           <Route path="/leaves" element={<ProtectedRoute><Layout><Leaves /></Layout></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />

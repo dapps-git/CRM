@@ -13,7 +13,9 @@ import {
   FiLogOut,
   FiMenu,
   FiX,
-  FiEdit3
+  FiEdit3,
+  FiGlobe,
+  FiServer
 } from 'react-icons/fi';
 import logoImg from '../assets/logo.png';
 
@@ -29,12 +31,13 @@ const Layout = ({ children }) => {
     return () => clearInterval(timer);
   }, []);
 
-
   const navItems = [
     { name: 'Dashboard', path: '/', icon: FiHome },
     { name: 'Business Numbers', path: '/business', icon: FiBriefcase },
     { name: 'Expenses', path: '/finance', icon: FiDollarSign },
     { name: 'Invoice Module', path: '/invoice', icon: FiPrinter },
+    { name: 'Domain Management', path: '/domains', icon: FiGlobe },
+    { name: 'Server Management', path: '/servers', icon: FiServer },
     { name: 'Members', path: '/members', icon: FiUsers },
     { name: 'Leave Management', path: '/leaves', icon: FiCalendar },
     { name: 'Reports', path: '/reports', icon: FiFileText },
@@ -56,7 +59,7 @@ const Layout = ({ children }) => {
           <img
             src={companyLogo || logoImg}
             alt="Logo"
-            className="h-11 max-w-[220px] w-auto object-contain"
+            className="h-10 max-w-[200px] w-auto object-contain"
             onError={(e) => { e.target.src = logoImg; }}
           />
         </div>
@@ -68,7 +71,7 @@ const Layout = ({ children }) => {
       {/* --- Sidebar --- */}
       <aside
         className={`
-          fixed top-0 left-0 z-40 w-60 h-screen flex flex-col justify-between flex-shrink-0
+          fixed top-0 left-0 z-40 w-60 h-screen flex flex-col justify-between flex-shrink-0 overflow-hidden
           transform transition-transform duration-300 md:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -77,20 +80,20 @@ const Layout = ({ children }) => {
           boxShadow: '4px 0 16px rgba(138, 50, 198, 0.05)',
         }}
       >
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Brand header */}
-          <div className="hidden md:flex flex-col items-center justify-center px-4 py-7 border-b border-purple-400/20">
+          <div className="hidden md:flex flex-col items-center justify-center px-3 py-2.5 border-b border-purple-400/20 flex-shrink-0">
             <img
               src={companyLogo || logoImg}
               alt="Logo"
-              className="h-16 max-w-[230px] w-auto object-contain transition-transform duration-200 hover:scale-105"
+              className="h-14 max-w-[225px] w-auto object-contain transition-transform duration-200 hover:scale-105"
               style={{ filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.3))' }}
               onError={(e) => { e.target.src = logoImg; }}
             />
           </div>
 
           {/* Navigation */}
-          <nav className="px-3 py-5 space-y-1">
+          <nav className="px-2.5 py-3 space-y-1 flex-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -99,18 +102,17 @@ const Layout = ({ children }) => {
                   key={item.name}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium tracking-wide transition-all duration-150"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-150"
                   style={isActive ? {
                     background: '#f4ce41', // Gold active background pill
                     color: '#2c2438',      // Dark text
-                    fontWeight: '600',
                   } : {
                     color: '#eddff9',      // Soft purple text
                   }}
                   onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ffffff'; } }}
                   onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#eddff9'; } }}
                 >
-                  <Icon size={16} style={{ color: isActive ? '#2c2438' : '#eddff9' }} />
+                  <Icon size={15} style={{ color: isActive ? '#2c2438' : '#eddff9' }} />
                   <span>{item.name}</span>
                 </Link>
               );
@@ -118,23 +120,13 @@ const Layout = ({ children }) => {
           </nav>
         </div>
 
-        {/* Sidebar Footer — Always visible at bottom */}
-        <div className="p-3 border-t border-purple-400/20 flex-shrink-0 bg-[#8a32c6]">
-          <div className="flex items-center space-x-3 px-3 py-2.5 mb-2 text-purple-100">
-            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-semibold text-xs border border-white/20">
-              A
-            </div>
-            <div>
-              <div className="text-[13px] font-semibold">Admin</div>
-              <div className="text-[11.5px] font-medium text-purple-200 truncate w-36">{user?.email}</div>
-            </div>
-          </div>
-
+        {/* Sidebar Footer — Sign Out Only */}
+        <div className="p-2.5 border-t border-purple-400/20 flex-shrink-0 bg-[#8a32c6]">
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors"
-            style={{ color: '#ffb3b3' }}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-[13px] font-bold tracking-wide transition-colors"
+            style={{ color: '#ffcdd2' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
@@ -157,7 +149,7 @@ const Layout = ({ children }) => {
 
         {/* Top Navbar */}
         <header
-          className="hidden md:flex items-center justify-between px-7 py-3.5"
+          className="hidden md:flex items-center justify-between px-7 py-3"
           style={{
             background: '#F3F4F6',
             borderBottom: '1px solid rgba(138, 50, 198, 0.1)',
@@ -173,13 +165,13 @@ const Layout = ({ children }) => {
             </span>
           </div>
 
-          <div className="text-sm font-medium text-neutral-600">
-            Welcome back, <span className="text-[#8a32c6] font-semibold">Admin 👋</span>
+          <div className="text-xs font-medium text-neutral-600">
+            Welcome back, <span className="text-[#8a32c6] font-bold">{user?.email || 'Admin'} 👋</span>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 md:p-8 overflow-x-hidden" style={{ background: '#F3F4F6' }}>
+        <main className="flex-1 p-5 md:p-6 overflow-x-hidden" style={{ background: '#F3F4F6' }}>
           {children}
         </main>
       </div>

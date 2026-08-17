@@ -45,11 +45,10 @@ const generateInvoiceBadgeSVG = (invNum) => {
   return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="24" viewBox="0 0 96 24"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="96" height="24" rx="5" fill="%23f4ce41"/><text x="48" y="16.5" font-family="Montserrat, sans-serif" font-weight="800" font-size="11" fill="%232b1947" text-anchor="middle">${text}</text></svg>`;
 };
 
-// Crisp SVG Data URI generator for Balance Due Badge (Guarantees 100% dead-center vertical text alignment in html2canvas PDF exports)
 const generateBalanceDueBadgeSVG = (amount) => {
   const formatted = (Number(amount) || 0).toLocaleString();
   const svgWidth = Math.max(150, 125 + formatted.length * 8);
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="26" viewBox="0 0 ${svgWidth} 26" style="overflow:hidden;"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="${svgWidth}" height="26" rx="6" fill="%23fef2f2" stroke="%23ef4444" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif"><tspan x="8" font-size="11.5" font-weight="600" fill="%23991b1b">Balance Due</tspan><tspan x="78" font-size="11.5" font-weight="600" fill="%23991b1b"> : </tspan><tspan x="88" font-size="13.5" font-weight="800" fill="%23dc2626">₹${formatted}</tspan></text></svg>`;
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="26" viewBox="0 0 ${svgWidth} 26" style="overflow:hidden;"><defs><style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&amp;display=swap'); text { font-family: 'Montserrat', sans-serif; }</style></defs><rect width="${svgWidth}" height="26" rx="6" fill="%23fef2f2" stroke="%23ef4444" stroke-width="1.5"/><text y="17.5" font-family="Montserrat, sans-serif"><tspan x="8" font-size="11.5" font-weight="700" fill="%23000000">Balance Due</tspan><tspan x="78" font-size="11.5" font-weight="700" fill="%23000000"> : </tspan><tspan x="88" font-size="13.5" font-weight="800" fill="%23dc2626">₹${formatted}</tspan></text></svg>`;
 };
 
 // Crisp SVG Data URI generator for Address Line (Locked icon + text image line guarantees 100% dead-center icon alignment in html2canvas)
@@ -907,8 +906,8 @@ const Invoice = () => {
                   onBlur={onBlur}
                 />
               </div>
-              <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-2 text-rose-600">
-                <span className="font-bold">Balance Due:</span>
+              <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-2 text-[#000000]">
+                <span className="font-bold text-[#000000]">Balance Due:</span>
                 <span className="font-bold text-base text-rose-600">₹{invoiceForm.balanceDue.toLocaleString()}</span>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit, FiTrash2, FiSearch, FiX, FiFileText, FiEye, FiPaperclip, FiImage } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSearch, FiX, FiFileText, FiEye, FiPaperclip, FiCamera, FiGift, FiCalendar, FiUser } from 'react-icons/fi';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { isLettersOnly, isExactly10Digits } from '../utils/validation';
@@ -26,13 +26,15 @@ const Members = () => {
   const [form, setForm] = useState({
     name: '',
     phoneNumber: '',
+    profileImage: '',
+    dob: '',
     idProofs: [{ idName: '', idPhoto: '' }]
   });
 
   const [touched, setTouched] = useState({});
 
   // Image compression helper
-  const compressImageToDataUri = (file) => {
+  const compressImageToDataUri = (file, maxDim = 1000) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -41,7 +43,6 @@ const Members = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1000;
           if (width > maxDim || height > maxDim) {
             if (width > height) {
               height = Math.round((height * maxDim) / width);
@@ -89,6 +90,19 @@ const Members = () => {
     setTouched({ ...touched, [e.target.name]: true });
   };
 
+  // Profile Image Picker
+  const handleProfileImageFile = async (file) => {
+    if (!file) return;
+    try {
+      toast.loading('Processing profile photo...', { id: 'profile-photo' });
+      const dataUri = await compressImageToDataUri(file, 600);
+      setForm(prev => ({ ...prev, profileImage: dataUri }));
+      toast.success('Profile photo updated', { id: 'profile-photo' });
+    } catch {
+      toast.error('Failed to process image file', { id: 'profile-photo' });
+    }
+  };
+
   // ID Proof Slot Handlers
   const addIdProofSlot = () => {
     if (form.idProofs.length >= 3) {
@@ -122,7 +136,7 @@ const Members = () => {
     if (!file) return;
     try {
       toast.loading('Compressing & attaching ID photo...', { id: 'photo-upload' });
-      const dataUri = await compressImageToDataUri(file);
+      const dataUri = await compressImageToDataUri(file, 1000);
       const updated = [...form.idProofs];
       updated[index].idPhoto = dataUri;
       setForm({ ...form, idProofs: updated });
@@ -130,6 +144,29 @@ const Members = () => {
     } catch {
       toast.error('Failed to process image file', { id: 'photo-upload' });
     }
+  };
+
+  // Helper to format Date for display
+  const formatDateDisplay = (dateInput) => {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Helper to check if Birthday is within 2 days
+  const isBirthdaySoon = (dobInput) => {
+    if (!dobInput) return false;
+    const d = new Date(dobInput);
+    if (isNaN(d.getTime())) return false;
+    const now = new Date();
+    const bdayThisYear = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+    const diffMs = bdayThisYear.getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 2;
   };
 
   // Validations
@@ -160,7 +197,11 @@ const Members = () => {
     setSubmitting(true);
     try {
       const cleanIdProofs = form.idProofs.filter(p => p.idName?.trim() && p.idPhoto?.trim());
-      const payload = { ...form, idProofs: cleanIdProofs };
+      const payload = {
+        ...form,
+        dob: form.dob ? form.dob : null,
+        idProofs: cleanIdProofs
+      };
 
       if (editId) {
         await api.put(`/member/${editId}`, payload);
@@ -203,9 +244,19 @@ const Members = () => {
 
   const openEditModal = (item) => {
     setEditId(item._id);
+    let formattedDob = '';
+    if (item.dob) {
+      const d = new Date(item.dob);
+      if (!isNaN(d.getTime())) {
+        formattedDob = d.toISOString().split('T')[0];
+      }
+    }
+
     setForm({
       name: item.name || '',
       phoneNumber: item.phoneNumber || '',
+      profileImage: item.profileImage || '',
+      dob: formattedDob,
       idProofs: (item.idProofs && item.idProofs.length > 0)
         ? item.idProofs
         : [{ idName: '', idPhoto: '' }]
@@ -219,6 +270,8 @@ const Members = () => {
     setForm({
       name: '',
       phoneNumber: '',
+      profileImage: '',
+      dob: '',
       idProofs: [{ idName: '', idPhoto: '' }]
     });
     setTouched({});
@@ -230,11 +283,11 @@ const Members = () => {
     border: '1px solid rgba(138,50,198,0.2)',
     borderRadius: '6px',
     color: '#2c2438',
-    fontSize: '11px',
+    fontSize: '11.5px',
     fontFamily: 'Montserrat, sans-serif',
     outline: 'none',
     width: '100%',
-    padding: '7px 10px',
+    padding: '8px 11px',
     transition: 'all 0.15s ease-in-out',
   };
   const onFocus = e => { e.target.style.borderColor = '#8a32c6'; e.target.style.boxShadow = '0 0 0 2px rgba(138,50,198,0.12)'; };
@@ -247,106 +300,145 @@ const Members = () => {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Members Directory</h1>
-          <p className="text-[10px] text-brand-600 font-semibold mt-0.5">Manage team partners and staff contact records.</p>
+          <p className="text-[10px] text-brand-600 font-semibold mt-0.5">Manage team partners, profile photos & staff contact records.</p>
         </div>
 
         <button
           type="button"
           onClick={() => { resetForm(); setIsModalOpen(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', borderRadius: 6, background: '#8a32c6', color: '#fff', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', fontSize: 11, fontWeight: 700, boxShadow: '0 2px 8px rgba(138,50,198,0.25)', border: 'none' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 6, background: '#8a32c6', color: '#fff', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', fontSize: 11.5, fontWeight: 700, boxShadow: '0 3px 10px rgba(138,50,198,0.25)', border: 'none' }}
           onMouseEnter={e => e.currentTarget.style.background = '#7828b0'}
           onMouseLeave={e => e.currentTarget.style.background = '#8a32c6'}
         >
-          <FiPlus size={12} />
+          <FiPlus size={14} />
           <span>Add Member</span>
         </button>
       </div>
 
       {/* Search Input bar */}
       <div className="relative w-full max-w-xs">
-        <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a32c6]" size={12} />
+        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a32c6]" size={13} />
         <input
           type="text"
-          placeholder="Search members..."
+          placeholder="Search members by name or phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ ...INPUT, paddingLeft: 28 }}
+          style={{ ...INPUT, paddingLeft: 30 }}
           onFocus={onFocus}
           onBlur={onBlur}
         />
       </div>
 
-      {/* Main Members Grid list */}
+      {/* Main Members Grid list — ENLARGED MEMBER CARDS */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-3">
           <div className="w-8 h-8 border-2 border-[#8a32c6] border-t-transparent rounded-full animate-spin" />
           <p className="text-2xs text-neutral-500">Loading directory...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {members.length > 0 ? (
-            members.map((item) => (
-              <div 
-                key={item._id} 
-                className="bg-white border border-neutral-200/60 p-4 rounded-lg flex flex-col justify-between shadow-xs hover:shadow-sm transition-shadow relative group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-full bg-[#8a32c6]/10 text-[#8a32c6] flex items-center justify-center font-bold text-xs border border-[#8a32c6]/20">
-                      {item.name.charAt(0).toUpperCase()}
+            members.map((item) => {
+              const hasBdaySoon = isBirthdaySoon(item.dob);
+              return (
+                <div 
+                  key={item._id} 
+                  className="bg-white border border-purple-200/80 p-5 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-md transition-all relative group"
+                  style={{
+                    background: hasBdaySoon ? 'linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%)' : '#ffffff',
+                    border: hasBdaySoon ? '1.5px solid #d946ef' : '1px solid rgba(138,50,198,0.2)'
+                  }}
+                >
+                  {/* Top Card Section: Profile Image + Name + Phone + Edit Actions */}
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3.5">
+                        {/* Member Profile Avatar Box */}
+                        <div className="relative flex-shrink-0">
+                          {item.profileImage ? (
+                            <img
+                              src={item.profileImage}
+                              alt={item.name}
+                              className="w-14 h-14 rounded-full object-cover border-2 border-[#8a32c6] shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-[#8a32c6]/10 text-[#8a32c6] flex items-center justify-center font-bold text-lg border-2 border-[#8a32c6]/30 shadow-xs">
+                              {item.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">{item.name}</h3>
+                          <p className="text-[11px] text-purple-900 font-mono font-semibold mt-0.5">{item.phoneNumber}</p>
+                          
+                          {/* DOB Badge */}
+                          {item.dob && (
+                            <div className="mt-1 flex items-center space-x-1 text-[10.5px] font-bold text-[#8a32c6]">
+                              <FiGift size={11} className="text-[#8a32c6]" />
+                              <span>DOB: {formatDateDisplay(item.dob)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Edit / Delete Buttons */}
+                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(item)}
+                          className="text-[#8a32c6] hover:text-[#7828b0] bg-purple-50 p-1.5 rounded-md transition-colors"
+                          title="Edit Member"
+                        >
+                          <FiEdit size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => confirmDelete(item._id)}
+                          className="text-neutral-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-md transition-colors"
+                          title="Delete Member"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-neutral-800 text-2xs uppercase tracking-wider">{item.name}</h3>
-                      <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{item.phoneNumber}</p>
-                    </div>
+
+                    {/* Birthday Alert Notification Badge if Birthday is within 2 days */}
+                    {hasBdaySoon && (
+                      <div className="mt-3 px-2.5 py-1 bg-fuchsia-100 border border-fuchsia-300 text-fuchsia-900 rounded-md text-[10px] font-extrabold flex items-center space-x-1.5">
+                        <FiGift className="animate-bounce text-fuchsia-600" size={12} />
+                        <span>🎂 Birthday Coming Up Soon! Wish them Happy Birthday!</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(item)}
-                      className="text-[#8a32c6] hover:text-[#7828b0] transition-colors p-1"
-                      title="Edit Member"
-                    >
-                      <FiEdit size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => confirmDelete(item._id)}
-                      className="text-neutral-400 hover:text-rose-600 transition-colors p-1"
-                      title="Delete Member"
-                    >
-                      <FiTrash2 size={13} />
-                    </button>
-                  </div>
+                  {/* ID Proofs Badges on Member Card */}
+                  {item.idProofs && item.idProofs.length > 0 ? (
+                    <div className="mt-4 pt-3 border-t border-purple-100/90 flex flex-wrap gap-2">
+                      {item.idProofs.map((idItem, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setPreviewIdPhoto(idItem)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-[#8a32c6] border border-purple-200 text-[10px] font-bold rounded-md transition-colors"
+                          title="Click to view ID Photo"
+                        >
+                          <FiFileText size={11} />
+                          <span>{idItem.idName}</span>
+                          {idItem.idPhoto && (
+                            <img src={idItem.idPhoto} alt="" className="w-4 h-4 rounded object-cover border border-purple-300 ml-0.5" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-4 pt-2.5 border-t border-neutral-100 text-[10px] text-neutral-400 italic">
+                      No ID Proof attached
+                    </div>
+                  )}
                 </div>
-
-                {/* ID Proofs Badges on Member Card */}
-                {item.idProofs && item.idProofs.length > 0 ? (
-                  <div className="mt-3 pt-2.5 border-t border-purple-100/80 flex flex-wrap gap-1.5">
-                    {item.idProofs.map((idItem, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setPreviewIdPhoto(idItem)}
-                        className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-50/80 hover:bg-purple-100 text-[#8a32c6] border border-purple-200 text-[9.5px] font-bold rounded transition-colors"
-                        title="Click to view ID Photo"
-                      >
-                        <FiFileText size={10} />
-                        <span>{idItem.idName}</span>
-                        {idItem.idPhoto && (
-                          <img src={idItem.idPhoto} alt="" className="w-4 h-4 rounded object-cover border border-purple-300 ml-0.5" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mt-3 pt-2 border-t border-neutral-100 text-[9.5px] text-neutral-400 italic">
-                    No ID Proof attached
-                  </div>
-                )}
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="col-span-full text-center py-12 text-neutral-400 font-semibold italic text-2xs">
               No team members registered yet. Click Add Member to begin.
@@ -358,13 +450,13 @@ const Members = () => {
       {/* Add / Edit Member Modal Dialog */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-md bg-white border border-neutral-200 rounded-lg p-5 shadow-xl relative my-8 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg bg-white border border-neutral-200 rounded-xl p-6 shadow-xl relative my-8 max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-3 top-3 p-1 rounded text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="absolute right-4 top-4 p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              <FiX size={16} />
+              <FiX size={18} />
             </button>
 
             <h3 className="text-xs font-bold text-[#8a32c6] uppercase tracking-widest mb-4">
@@ -372,6 +464,60 @@ const Members = () => {
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-2xs font-semibold">
+              
+              {/* Profile Image Upload Picker */}
+              <div className="flex items-center space-x-4 bg-purple-50/50 p-3 border border-purple-100 rounded-lg">
+                <div className="relative">
+                  {form.profileImage ? (
+                    <img
+                      src={form.profileImage}
+                      alt="Profile Preview"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-[#8a32c6] shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#8a32c6]/10 text-[#8a32c6] flex items-center justify-center font-bold text-xl border-2 border-[#8a32c6]/30">
+                      {form.name ? form.name.charAt(0).toUpperCase() : <FiUser size={24} />}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1.5">
+                  <label className="block text-neutral-700 font-bold uppercase tracking-wider text-[10px]">
+                    Member Profile Photo
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="file"
+                      id="profile-image-file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleProfileImageFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="profile-image-file"
+                      className="cursor-pointer py-1.5 px-3 bg-white border border-purple-300 hover:border-[#8a32c6] text-[#8a32c6] text-[10px] font-bold rounded flex items-center space-x-1 transition-colors"
+                    >
+                      <FiCamera size={12} />
+                      <span>{form.profileImage ? 'Change Photo' : 'Upload Profile Photo'}</span>
+                    </label>
+
+                    {form.profileImage && (
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, profileImage: '' }))}
+                        className="text-rose-500 text-[10px] font-bold hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Full Name (Letters Only) *</label>
                 <input
@@ -390,22 +536,37 @@ const Members = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Phone Number (10 Digits) *</label>
-                <input
-                  type="text"
-                  name="phoneNumber"
-                  required
-                  placeholder="e.g. 9876543210"
-                  value={form.phoneNumber}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace', borderColor: (touched.phoneNumber && !isPhoneValid) ? '#ef4444' : INPUT.border }}
-                  onFocus={onFocus}
-                />
-                {touched.phoneNumber && !isPhoneValid && (
-                  <span className="text-[9px] text-rose-500 block font-normal mt-0.5">Exactly 10 digits required</span>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Phone Number (10 Digits) *</label>
+                  <input
+                    type="text"
+                    name="phoneNumber"
+                    required
+                    placeholder="e.g. 9876543210"
+                    value={form.phoneNumber}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace', borderColor: (touched.phoneNumber && !isPhoneValid) ? '#ef4444' : INPUT.border }}
+                    onFocus={onFocus}
+                  />
+                  {touched.phoneNumber && !isPhoneValid && (
+                    <span className="text-[9px] text-rose-500 block font-normal mt-0.5">Exactly 10 digits required</span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Date of Birth (DOB)</label>
+                  <input
+                    type="date"
+                    name="dob"
+                    value={form.dob}
+                    onChange={handleChange}
+                    style={INPUT}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                  />
+                </div>
               </div>
 
               {/* ── ID PROOFS SECTION (1 Mandatory, Max 3) ── */}

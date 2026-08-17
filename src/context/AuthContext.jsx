@@ -49,24 +49,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Request password reset OTP
-  const requestForgotPassword = async (email) => {
+  // Request password reset OTP (supports Mobile 9745307450 or Email)
+  const requestForgotPassword = async (emailOrMobile) => {
     try {
-      const res = await api.post('/auth/forgot-password', { email });
-      toast.success(res.data.message || 'Reset code sent to email');
-      return { success: true, otp: res.data.otp };
+      const payload = {};
+      if (emailOrMobile && emailOrMobile.includes('@')) {
+        payload.email = emailOrMobile;
+      } else {
+        payload.mobileNumber = emailOrMobile || '9745307450';
+      }
+      const res = await api.post('/auth/forgot-password', payload);
+      toast.success(res.data.message || 'OTP verification code sent');
+      return {
+        success: true,
+        otp: res.data.otp,
+        email: res.data.email,
+        mobileNumber: res.data.mobileNumber || '9745307450'
+      };
     } catch (error) {
-      const msg = error.response?.data?.message || 'Failed to request reset';
+      const msg = error.response?.data?.message || 'Failed to request reset OTP';
       toast.error(msg);
       return { success: false };
     }
   };
 
   // Confirm password reset
-  const confirmPasswordReset = async (email, otp, newPassword) => {
+  const confirmPasswordReset = async (target, otp, newPassword) => {
     try {
-      const res = await api.post('/auth/reset-password', { email, otp, newPassword });
-      toast.success(res.data.message || 'Password reset successful');
+      const payload = { otp, newPassword };
+      if (target && target.includes('@')) {
+        payload.email = target;
+      } else {
+        payload.mobileNumber = target || '9745307450';
+      }
+      const res = await api.post('/auth/reset-password', payload);
+      toast.success(res.data.message || 'Password updated successfully! Log in with your new password.');
       return { success: true };
     } catch (error) {
       const msg = error.response?.data?.message || 'Failed to reset password';
