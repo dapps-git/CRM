@@ -661,7 +661,7 @@ const Domains = () => {
               </div>
 
               <div>
-                <label className="block text-neutral-600 font-bold mb-1">Domain Owner Email (Alerts Sent Here)</label>
+                <label className="block text-neutral-600 font-bold mb-1">Domain Owner Email</label>
                 <input
                   type="email"
                   placeholder="e.g. client@aladhwastudio.com"
@@ -670,7 +670,7 @@ const Domains = () => {
                   className="w-full px-3 py-2 border border-purple-200 rounded-none outline-none focus:border-[#8a32c6] text-xs"
                 />
                 <span className="text-[10px] text-neutral-400 block mt-0.5">
-                  Warning email automatically sent 2 weeks before expiry to this email & crevionads@gmail.com
+                  Warning email automatically sent 2 weeks before expiry to crevionads@gmail.com & saleelvt57@gmail.com
                 </span>
               </div>
 

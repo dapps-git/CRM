@@ -17,6 +17,27 @@ const Settings = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdStatus, setPwdStatus] = useState(null); // null | 'checking' | 'correct' | 'incorrect'
+
+  // Real-time verification of Current Password as user types
+  useEffect(() => {
+    if (!passwords.oldPassword) {
+      setPwdStatus(null);
+      return;
+    }
+
+    setPwdStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.post('/auth/verify-password', { password: passwords.oldPassword });
+        setPwdStatus(res.data.valid ? 'correct' : 'incorrect');
+      } catch (err) {
+        setPwdStatus('incorrect');
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [passwords.oldPassword]);
 
   // Keep form in sync if context changes from elsewhere
   useEffect(() => {
@@ -268,7 +289,12 @@ const Settings = () => {
                 value={passwords.oldPassword}
                 onChange={e => setPasswords({ ...passwords, oldPassword: e.target.value })}
                 placeholder="Enter current password"
-                style={{ ...INPUT, paddingRight: 36 }}
+                style={{
+                  ...INPUT,
+                  paddingRight: 36,
+                  borderColor: pwdStatus === 'correct' ? '#16a34a' : pwdStatus === 'incorrect' ? '#dc2626' : 'rgba(138,50,198,0.18)',
+                  boxShadow: pwdStatus === 'correct' ? '0 0 0 3px rgba(22,163,74,0.12)' : pwdStatus === 'incorrect' ? '0 0 0 3px rgba(220,38,38,0.12)' : 'none'
+                }}
                 onFocus={onFocus}
                 onBlur={onBlur}
                 required
@@ -278,6 +304,24 @@ const Settings = () => {
                 {showOld ? <FiEyeOff size={13} /> : <FiEye size={13} />}
               </button>
             </div>
+
+            {/* Real-Time Current Password Verification Badge */}
+            {pwdStatus === 'checking' && (
+              <div style={{ fontSize: 10, color: '#8a32c6', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 10, height: 10, border: '2px solid #8a32c6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                Checking password...
+              </div>
+            )}
+            {pwdStatus === 'correct' && (
+              <div style={{ fontSize: 10, color: '#16a34a', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <FiCheck size={12} /> Correct password
+              </div>
+            )}
+            {pwdStatus === 'incorrect' && (
+              <div style={{ fontSize: 10, color: '#dc2626', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                ✕ Incorrect password
+              </div>
+            )}
           </div>
 
           {/* New Password */}
