@@ -84,7 +84,12 @@ const Login = () => {
     const res = await requestForgotPassword(targetEmail);
     setLoading(false);
     if (res.success) {
-      setOtp(''); // Require user to type code from their real email inbox
+      if (res.otp) {
+        setOtp(res.otp);
+        toast.success(`🔑 OTP Code: ${res.otp}`, { duration: 12000 });
+      } else {
+        setOtp('');
+      }
       setStage('forgot_reset');
     }
   };
