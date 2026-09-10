@@ -7,8 +7,23 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 
+const getTodayLocalStr = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const getCurrentMonthLocalStr = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+};
+
 const Leaves = () => {
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthLocalStr()); // YYYY-MM
   const [selectedPartnerFilter, setSelectedPartnerFilter] = useState('All Partners');
   const [activeTab, setActiveTab] = useState('matrix'); // 'matrix' | 'cards' | 'logs'
   
@@ -27,7 +42,7 @@ const Leaves = () => {
 
   // Form states
   const [formMemberId, setFormMemberId] = useState('');
-  const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
+  const [formDate, setFormDate] = useState(getTodayLocalStr());
   const [formStatus, setFormStatus] = useState('Present');
   const [formReason, setFormReason] = useState('');
 
@@ -40,6 +55,28 @@ const Leaves = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   const currentMonthName = monthNames[monthNum - 1] + ' ' + year;
+
+  const handlePrevMonth = (e) => {
+    if (e) e.stopPropagation();
+    let [y, m] = selectedMonth.split('-').map(Number);
+    m -= 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    setSelectedMonth(`${y}-${String(m).padStart(2, '0')}`);
+  };
+
+  const handleNextMonth = (e) => {
+    if (e) e.stopPropagation();
+    let [y, m] = selectedMonth.split('-').map(Number);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    setSelectedMonth(`${y}-${String(m).padStart(2, '0')}`);
+  };
 
   // Fetch all necessary data
   const fetchData = async () => {
@@ -96,7 +133,7 @@ const Leaves = () => {
     setModalMode('add');
     setEditingId(null);
     setFormMemberId(members[0]?._id || '');
-    setFormDate(new Date().toISOString().slice(0, 10));
+    setFormDate(getTodayLocalStr());
     setFormStatus('Present');
     setFormReason('');
     setIsModalOpen(true);
@@ -107,7 +144,7 @@ const Leaves = () => {
     setModalMode('add');
     setEditingId(null);
     setFormMemberId('ALL');
-    setFormDate(new Date().toISOString().slice(0, 10));
+    setFormDate(getTodayLocalStr());
     setFormStatus('Company Holiday');
     setFormReason('Company Holiday');
     setIsModalOpen(true);
@@ -462,11 +499,7 @@ const Leaves = () => {
         <div className="flex items-center gap-1 bg-purple-50/80 border border-purple-200/80 px-2 py-1 relative shadow-2xs">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              const d = new Date(year, monthNum - 2, 1);
-              setSelectedMonth(d.toISOString().slice(0, 7));
-            }}
+            onClick={handlePrevMonth}
             className="p-1 hover:bg-purple-200/80 text-[#8a32c6] transition-colors relative z-20 cursor-pointer"
             title="Previous Month"
           >
@@ -488,11 +521,7 @@ const Leaves = () => {
 
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              const d = new Date(year, monthNum, 1);
-              setSelectedMonth(d.toISOString().slice(0, 7));
-            }}
+            onClick={handleNextMonth}
             className="p-1 hover:bg-purple-200/80 text-[#8a32c6] transition-colors relative z-20 cursor-pointer"
             title="Next Month"
           >
