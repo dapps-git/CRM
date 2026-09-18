@@ -58,7 +58,8 @@ const Login = () => {
     try {
       const res = await api.post('/auth/login', { email: cleanEmail, password: cleanPassword });
       const data = res.data;
-      localStorage.setItem('token', data.token);
+      if (data.token) localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       setUser({ _id: data._id, email: data.email });
       toast.success(`Welcome to ${companyName}!`);
       navigate('/');
@@ -79,12 +80,13 @@ const Login = () => {
   // Step 1: Send Verification OTP via Nodemailer
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    const targetEmail = email.trim() || 'crevionads@gmail.com';
+    const targetEmail = email.trim();
+    if (!targetEmail) return toast.error('Please enter your email address');
     setLoading(true);
     const res = await requestForgotPassword(targetEmail);
     setLoading(false);
     if (res.success) {
-      setOtp(''); // Require user to check crevionads@gmail.com inbox and type OTP manually
+      setOtp('');
       setStage('forgot_reset');
     }
   };
@@ -93,8 +95,9 @@ const Login = () => {
   const handleForgotResetSubmit = async (e) => {
     e.preventDefault();
     if (!otp || !newPassword) return toast.error('Please fill all fields');
+    const targetEmail = email.trim();
+    if (!targetEmail) return toast.error('Please enter your email address');
     setLoading(true);
-    const targetEmail = email.trim() || 'crevionads@gmail.com';
     const res = await confirmPasswordReset(targetEmail, otp, newPassword);
     setLoading(false);
     if (res.success) {

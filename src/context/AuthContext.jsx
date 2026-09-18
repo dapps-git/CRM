@@ -49,21 +49,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Request password reset OTP (supports Mobile 9745307450 or Email)
+  // Request password reset OTP
   const requestForgotPassword = async (emailOrMobile) => {
     try {
       const payload = {};
       if (emailOrMobile && emailOrMobile.includes('@')) {
-        payload.email = emailOrMobile;
-      } else {
-        payload.mobileNumber = emailOrMobile || '9745307450';
+        payload.email = emailOrMobile.trim().toLowerCase();
+      } else if (emailOrMobile) {
+        payload.mobileNumber = emailOrMobile.trim();
       }
       const res = await api.post('/auth/forgot-password', payload);
       toast.success(res.data.message || 'OTP verification code sent');
       return {
         success: true,
         email: res.data.email,
-        mobileNumber: res.data.mobileNumber || '9745307450'
+        mobileNumber: res.data.mobileNumber
       };
     } catch (error) {
       const msg = error.response?.data?.message || 'Failed to request reset OTP';
@@ -77,9 +77,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const payload = { otp, newPassword };
       if (target && target.includes('@')) {
-        payload.email = target;
-      } else {
-        payload.mobileNumber = target || '9745307450';
+        payload.email = target.trim().toLowerCase();
+      } else if (target) {
+        payload.mobileNumber = target.trim();
       }
       const res = await api.post('/auth/reset-password', payload);
       toast.success(res.data.message || 'Password updated successfully! Log in with your new password.');
@@ -93,6 +93,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     setUser(null);
     toast.success('Logged out successfully');
   };
