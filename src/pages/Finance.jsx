@@ -528,6 +528,23 @@ const Finance = () => {
   const onFocus = e => { e.target.style.borderColor = '#8a32c6'; e.target.style.boxShadow = '0 0 0 2px rgba(138,50,198,0.12)'; };
   const onBlur  = e => { e.target.style.borderColor = 'rgba(138,50,198,0.2)'; e.target.style.boxShadow = 'none'; };
 
+  // Dynamic period label for UI
+  const getPeriodLabel = () => {
+    if (selectedPeriod === 'today') return 'Today';
+    if (selectedPeriod === 'this_week') return 'This Week';
+    if (selectedPeriod === 'this_month') return 'This Month';
+    if (selectedPeriod === 'by_month') return selectedMonth === 'All Months' ? 'All Months' : selectedMonth;
+    if (selectedPeriod === 'custom') {
+      if (customStartDate && customEndDate) return `${customStartDate} to ${customEndDate}`;
+      if (customStartDate) return `From ${customStartDate}`;
+      if (customEndDate) return `Until ${customEndDate}`;
+      return 'Custom Range';
+    }
+    return 'All Time';
+  };
+
+  const periodLabel = getPeriodLabel();
+
   return (
     <div className="space-y-6" style={{ fontFamily: 'Montserrat, sans-serif' }}>
       
@@ -573,56 +590,62 @@ const Finance = () => {
         </div>
       </div>
 
-      {/* --- Top Summary KPI Cards (Total Income, Total Expenses, Net Profit) --- */}
+      {/* --- Top Summary KPI Cards (Total Income, Total Expenses, Net Profit for Selected Period) --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Income Card (Placed Prominently on Top) */}
+        {/* Total Income Card for Period */}
         <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
             <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
-              Total Income
+              Total Income ({periodLabel})
             </span>
             <span className="text-sm font-extrabold text-neutral-800">
-              ₹{totalAllTimeIncome.toLocaleString()}
+              ₹{filteredInflowSum.toLocaleString()}
             </span>
-            <span className="block text-[9px] text-emerald-600 font-semibold mt-0.5">
-              Today: +₹{dailyIncomeSum.toLocaleString()}
-            </span>
+            <div className="flex items-center gap-2 mt-1 text-[9px] font-semibold text-neutral-500">
+              <span className="text-emerald-600">Today: +₹{dailyIncomeSum.toLocaleString()}</span>
+              <span>•</span>
+              <span>All-Time: ₹{totalAllTimeIncome.toLocaleString()}</span>
+            </div>
           </div>
           <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-md">
             <FiTrendingUp size={16} />
           </div>
         </div>
 
-        {/* Total Expense Card */}
+        {/* Total Expense Card for Period */}
         <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
             <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
-              Total Expenses
+              Total Expenses ({periodLabel})
             </span>
             <span className="text-sm font-extrabold text-neutral-800">
-              ₹{totalAllTimeExpense.toLocaleString()}
+              ₹{filteredOutflowSum.toLocaleString()}
             </span>
-            <span className="block text-[9px] text-rose-500 font-semibold mt-0.5">
-              Today: -₹{dailyExpenseSum.toLocaleString()}
-            </span>
+            <div className="flex items-center gap-2 mt-1 text-[9px] font-semibold text-neutral-500">
+              <span className="text-rose-500">Today: -₹{dailyExpenseSum.toLocaleString()}</span>
+              <span>•</span>
+              <span>All-Time: ₹{totalAllTimeExpense.toLocaleString()}</span>
+            </div>
           </div>
           <div className="p-2 bg-rose-500/10 text-rose-600 rounded-md">
             <FiTrendingDown size={16} />
           </div>
         </div>
 
-        {/* Net Profit / Balance Card */}
+        {/* Net Profit / Balance Card for Period */}
         <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
             <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
-              Net Balance
+              Net Balance ({periodLabel})
             </span>
-            <span className={`text-sm font-extrabold ${totalAllTimeNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              ₹{totalAllTimeNet.toLocaleString()}
+            <span className={`text-sm font-extrabold ${filteredNetSum >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              ₹{filteredNetSum.toLocaleString()}
             </span>
-            <span className={`block text-[9px] font-semibold mt-0.5 ${dailyNetSum >= 0 ? 'text-[#8a32c6]' : 'text-rose-500'}`}>
-              Today's Net: ₹{dailyNetSum.toLocaleString()}
-            </span>
+            <div className="flex items-center gap-2 mt-1 text-[9px] font-semibold text-neutral-500">
+              <span className={dailyNetSum >= 0 ? 'text-[#8a32c6]' : 'text-rose-500'}>Today: ₹{dailyNetSum.toLocaleString()}</span>
+              <span>•</span>
+              <span>All-Time: ₹{totalAllTimeNet.toLocaleString()}</span>
+            </div>
           </div>
           <div className="p-2 bg-[#8a32c6]/10 text-[#8a32c6] rounded-md">
             <FiDollarSign size={16} />
@@ -901,23 +924,30 @@ const Finance = () => {
             </span>
           </div>
 
-          {/* Badges: Daily Income in Position & Filtered Totals */}
+          {/* Badges: Selected Period Totals (Monthly/Custom/Weekly/All) & Daily Metrics */}
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold">
-            {/* Daily Income badge */}
-            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold" title="Today's total inflow">
-              Daily Income: +₹{dailyIncomeSum.toLocaleString()}
-            </span>
-            <span className="text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-bold" title="Today's total outflow">
-              Daily Expense: -₹{dailyExpenseSum.toLocaleString()}
-            </span>
-            <span className={`px-2 py-0.5 rounded border font-extrabold ${dailyNetSum >= 0 ? 'bg-purple-50 text-[#8a32c6] border-purple-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`} title="Today's net">
-              Daily Net: ₹{dailyNetSum.toLocaleString()}
+            {/* Period / Filtered Income Total */}
+            <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 font-bold flex items-center gap-1 shadow-xs" title={`Total income for ${periodLabel}`}>
+              <span>Income Total:</span>
+              <strong className="font-mono text-emerald-800 text-[11px]">+₹{filteredInflowSum.toLocaleString()}</strong>
             </span>
 
-            {/* Filtered Total (when filters applied or viewing specific items) */}
-            <span className="text-neutral-400">│</span>
-            <span className="text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
-              Filtered Total: <strong className="text-neutral-900 font-mono">₹{filteredNetSum.toLocaleString()}</strong> ({combinedTransactions.length} records)
+            {/* Period / Filtered Expense Total */}
+            <span className="text-rose-700 bg-rose-50 px-2.5 py-1 rounded border border-rose-200 font-bold flex items-center gap-1 shadow-xs" title={`Total expense for ${periodLabel}`}>
+              <span>Expense Total:</span>
+              <strong className="font-mono text-rose-800 text-[11px]">-₹{filteredOutflowSum.toLocaleString()}</strong>
+            </span>
+
+            {/* Period / Filtered Net Tally */}
+            <span className={`px-2.5 py-1 rounded border font-extrabold flex items-center gap-1 shadow-xs ${filteredNetSum >= 0 ? 'bg-purple-50 text-[#8a32c6] border-purple-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`} title={`Net balance for ${periodLabel}`}>
+              <span>Net Tally:</span>
+              <strong className="font-mono text-[11px]">₹{filteredNetSum.toLocaleString()}</strong>
+            </span>
+
+            {/* Today's Inflow / Outflow Sub-Badge */}
+            <span className="text-neutral-300 hidden md:inline">│</span>
+            <span className="text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200 text-[9px]">
+              Today: <span className="text-emerald-700 font-bold font-mono">+₹{dailyIncomeSum.toLocaleString()}</span> / <span className="text-rose-700 font-bold font-mono">-₹{dailyExpenseSum.toLocaleString()}</span>
             </span>
           </div>
         </div>
