@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FiTrendingUp, 
   FiTrendingDown, 
@@ -8,7 +8,10 @@ import {
   FiEdit,
   FiFile,
   FiX,
-  FiPieChart
+  FiPieChart,
+  FiFilter,
+  FiSearch,
+  FiCalendar
 } from 'react-icons/fi';
 import { 
   BarChart, 
@@ -24,7 +27,7 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { isLettersOnly, isNumbersOnly, compressImageToWebP } from '../utils/validation';
+import { isNumbersOnly, compressImageToWebP } from '../utils/validation';
 import ConfirmModal from '../components/ConfirmModal';
 import { playAddSound, playDeleteSound } from '../utils/soundEffects';
 
@@ -34,9 +37,16 @@ const Finance = () => {
   const [loading, setLoading] = useState(true);
   const [showCharts, setShowCharts] = useState(false);
 
-  // Filters
+  // Filters State
+  const [viewType, setViewType] = useState('all'); // 'all' | 'income' | 'expense'
   const [selectedPartner, setSelectedPartner] = useState('All Partners');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedSourceType, setSelectedSourceType] = useState('All Sources'); // 'All Sources' | 'Company' | 'Client'
+  const [selectedPeriod, setSelectedPeriod] = useState('all'); // 'all' | 'today' | 'this_week' | 'this_month' | 'custom' | 'by_month'
   const [selectedMonth, setSelectedMonth] = useState('All Months');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [reasonSearch, setReasonSearch] = useState('');
 
   // Modal open triggers
   const [incomeModalOpen, setIncomeModalOpen] = useState(false);
@@ -74,10 +84,10 @@ const Finance = () => {
   const [incomeTouched, setIncomeTouched] = useState({});
   const [expenseTouched, setExpenseTouched] = useState({});
 
-  // Business client dropdown for Source field
-  const [businessClients, setBusinessClients] = useState([]);
+  // Business and Client list for Source dropdown / autocomplete
+  const [allClientSources, setAllClientSources] = useState([]);
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
-  const sourceDropdownRef = React.useRef(null);
+  const sourceDropdownRef = useRef(null);
 
   const partners = ['Saleel VT', 'Anfas Sir', 'Shamna Madam', 'Sabith Boss'];
   const expenseCategories = [
@@ -87,14 +97,33 @@ const Finance = () => {
   const fetchFinanceData = async () => {
     setLoading(true);
     try {
-      const [incRes, expRes, busRes] = await Promise.all([
+      const [incRes, expRes, busRes, clientRes] = await Promise.all([
         api.get('/income', { params: { limit: 2000 } }),
         api.get('/expense', { params: { limit: 2000 } }),
-        api.get('/business', { params: { limit: 500 } }).catch(() => ({ data: { businesses: [] } }))
+        api.get('/business', { params: { limit: 500 } }).catch(() => ({ data: { businesses: [] } })),
+        api.get('/client', { params: { limit: 500 } }).catch(() => ({ data: { clients: [] } }))
       ]);
       setIncomes(incRes.data.incomes || []);
       setExpenses(expRes.data.expenses || []);
-      setBusinessClients(busRes.data?.businesses || []);
+
+      const businesses = (busRes.data?.businesses || []).map(b => ({
+        _id: `bus-${b._id}`,
+        name: b.businessName,
+        agent: b.agentName,
+        location: b.location,
+        type: 'Lead'
+      }));
+      const clients = (clientRes.data?.clients || []).map(c => ({
+        _id: `cli-${c._id}`,
+        name: c.clientName,
+        agent: c.agentName,
+        location: c.location,
+        type: 'Client'
+      }));
+
+      // Merge and deduplicate
+      const combined = [...businesses, ...clients].filter(Boolean);
+      setAllClientSources(combined);
     } catch {
       toast.error('Failed to load transaction data');
     } finally {
@@ -136,7 +165,7 @@ const Finance = () => {
     if (submittingIncome) return;
 
     if (!isIncomeSourceValid) {
-      toast.error('Source name must contain letters and spaces only');
+      toast.error('Source name is required');
       return;
     }
     if (!isIncomeAmountValid) {
@@ -329,66 +358,143 @@ const Finance = () => {
     return Array.from(months).sort().reverse();
   };
 
+  // Helper date checker
+  const isDateMatchingPeriod = (itemDateStr) => {
+    if (!itemDateStr) return false;
+    const itemDate = new Date(itemDateStr);
+    const itemDateOnly = itemDate.toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (selectedPeriod === 'today') {
+      return itemDateOnly === todayStr;
+    }
+
+    if (selectedPeriod === 'this_week') {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      return itemDate >= startOfWeek && itemDate <= endOfWeek;
+    }
+
+    if (selectedPeriod === 'this_month') {
+      const curMonth = now.toISOString().slice(0, 7);
+      return itemDate.toISOString().slice(0, 7) === curMonth;
+    }
+
+    if (selectedPeriod === 'by_month') {
+      if (selectedMonth === 'All Months') return true;
+      return itemDate.toISOString().slice(0, 7) === selectedMonth;
+    }
+
+    if (selectedPeriod === 'custom') {
+      if (customStartDate && itemDateOnly < customStartDate) return false;
+      if (customEndDate && itemDateOnly > customEndDate) return false;
+      return true;
+    }
+
+    return true; // 'all'
+  };
+
   // Filter computations
   const filteredIncomes = incomes.filter(item => {
     const matchPartner = selectedPartner === 'All Partners' || item.receiver === selectedPartner;
-    const matchMonth = selectedMonth === 'All Months' || new Date(item.date).toISOString().slice(0, 7) === selectedMonth;
-    return matchPartner && matchMonth;
+    const matchPeriod = isDateMatchingPeriod(item.date);
+    
+    // Category match for income (Revenue / Service category or reason)
+    const matchCategory = selectedCategory === 'All Categories' || 
+      (item.businessName && item.businessName.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+      (item.source && item.source.toLowerCase().includes(selectedCategory.toLowerCase()));
+
+    // Reason search match
+    const matchReason = !reasonSearch.trim() || 
+      (item.source && item.source.toLowerCase().includes(reasonSearch.toLowerCase())) ||
+      (item.businessName && item.businessName.toLowerCase().includes(reasonSearch.toLowerCase()));
+
+    // Source match
+    const matchSource = selectedSourceType === 'All Sources' || 
+      (selectedSourceType === 'Company' ? item.receiver : true) ||
+      (selectedSourceType === 'Client' ? (item.source && item.source !== 'Company') : true);
+
+    return matchPartner && matchPeriod && matchCategory && matchReason && matchSource;
   });
 
   const filteredExpenses = expenses.filter(item => {
     const matchPartner = selectedPartner === 'All Partners' || item.partner === selectedPartner;
-    const matchMonth = selectedMonth === 'All Months' || new Date(item.date).toISOString().slice(0, 7) === selectedMonth;
-    return matchPartner && matchMonth;
+    const matchPeriod = isDateMatchingPeriod(item.date);
+    
+    // Category match for expense (e.g. Travel, Office, etc.)
+    const matchCategory = selectedCategory === 'All Categories' || item.category === selectedCategory;
+
+    // Reason search match
+    const matchReason = !reasonSearch.trim() || 
+      (item.reason && item.reason.toLowerCase().includes(reasonSearch.toLowerCase())) ||
+      (item.description && item.description.toLowerCase().includes(reasonSearch.toLowerCase()));
+
+    // Source match
+    const matchSource = selectedSourceType === 'All Sources' || true;
+
+    return matchPartner && matchPeriod && matchCategory && matchReason && matchSource;
   });
 
-  // KPI Calculations
-  const dateObj = new Date();
-  const currentMonthStr = dateObj.toISOString().slice(0, 7);
-  const currentMonthIncomes = incomes.filter(i => new Date(i.date).toISOString().slice(0, 7) === currentMonthStr);
-  const currentMonthExpenses = expenses.filter(e => new Date(e.date).toISOString().slice(0, 7) === currentMonthStr);
+  // 1. Overall / Total KPI Metrics (All Time Overall)
+  const totalAllTimeIncome = incomes.reduce((sum, item) => sum + item.amount, 0);
+  const totalAllTimeExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
+  const totalAllTimeNet = totalAllTimeIncome - totalAllTimeExpense;
 
-  const statsIncome = currentMonthIncomes.reduce((sum, item) => sum + item.amount, 0);
-  const statsExpense = currentMonthExpenses.reduce((sum, item) => sum + item.amount, 0);
-  const statsNet = statsIncome - statsExpense;
+  // 2. Daily (Today's) Metrics
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayIncomes = incomes.filter(i => new Date(i.date).toISOString().split('T')[0] === todayStr);
+  const todayExpenses = expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === todayStr);
+  const dailyIncomeSum = todayIncomes.reduce((sum, item) => sum + item.amount, 0);
+  const dailyExpenseSum = todayExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const dailyNetSum = dailyIncomeSum - dailyExpenseSum;
 
-  // Unified Transactions Ledger (Combined Inflow & Outflow)
-  const combinedTransactions = [
-    ...filteredIncomes.map(item => ({
-      _id: item._id,
-      date: item.date,
-      type: 'INCOME',
-      deleteType: 'income',
-      partner: item.receiver || 'Company Inflow',
-      reason: item.source,
-      category: item.businessName ? `Ref: ${item.businessName}` : 'Revenue',
-      inflow: item.amount,
-      outflow: 0,
-      image: item.receiptImage,
-      itemRef: item,
-      isExpense: false
-    })),
-    ...filteredExpenses.map(item => ({
-      _id: item._id,
-      date: item.date,
-      type: 'EXPENSE',
-      deleteType: 'expense',
-      partner: item.partner,
-      reason: item.reason,
-      category: item.category,
-      inflow: 0,
-      outflow: item.amount,
-      image: item.billImage,
-      itemRef: item,
-      isExpense: true
-    }))
-  ].sort((a, b) => new Date(b.date) - new Date(a.date));
+  // 3. Filtered Table sums
+  const filteredInflowSum = filteredIncomes.reduce((s, i) => s + i.amount, 0);
+  const filteredOutflowSum = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+  const filteredNetSum = filteredInflowSum - filteredOutflowSum;
 
-  const totalInflowSum = filteredIncomes.reduce((s, i) => s + i.amount, 0);
-  const totalOutflowSum = filteredExpenses.reduce((s, e) => s + e.amount, 0);
-  const netTallySum = totalInflowSum - totalOutflowSum;
+  // Unified Transactions Ledger (Combined Inflow & Outflow based on viewType)
+  const allInflows = (viewType === 'all' || viewType === 'income') ? filteredIncomes.map(item => ({
+    _id: item._id,
+    date: item.date,
+    type: 'INCOME',
+    deleteType: 'income',
+    partner: item.receiver || 'Company Inflow',
+    reason: item.source,
+    category: item.businessName ? `Ref: ${item.businessName}` : 'Revenue',
+    inflow: item.amount,
+    outflow: 0,
+    image: item.receiptImage,
+    itemRef: item,
+    isExpense: false
+  })) : [];
+
+  const allOutflows = (viewType === 'all' || viewType === 'expense') ? filteredExpenses.map(item => ({
+    _id: item._id,
+    date: item.date,
+    type: 'EXPENSE',
+    deleteType: 'expense',
+    partner: item.partner,
+    reason: item.reason,
+    category: item.category,
+    inflow: 0,
+    outflow: item.amount,
+    image: item.billImage,
+    itemRef: item,
+    isExpense: true
+  })) : [];
+
+  const combinedTransactions = [...allInflows, ...allOutflows].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   // Chart 1: Partner breakdown
+  const currentMonthStr = new Date().toISOString().slice(0, 7);
   const partnerExpenseShareData = partners.map(name => {
     const sum = expenses
       .filter(e => e.partner === name && new Date(e.date).toISOString().slice(0, 7) === currentMonthStr)
@@ -467,16 +573,19 @@ const Finance = () => {
         </div>
       </div>
 
-      {/* --- Summary KPI Cards --- */}
+      {/* --- Top Summary KPI Cards (Total Income, Total Expenses, Net Profit) --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Income Card */}
+        {/* Total Income Card (Placed Prominently on Top) */}
         <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
             <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
-              Total Income (This Month)
+              Total Income
             </span>
             <span className="text-sm font-extrabold text-neutral-800">
-              ₹{statsIncome.toLocaleString()}
+              ₹{totalAllTimeIncome.toLocaleString()}
+            </span>
+            <span className="block text-[9px] text-emerald-600 font-semibold mt-0.5">
+              Today: +₹{dailyIncomeSum.toLocaleString()}
             </span>
           </div>
           <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-md">
@@ -484,14 +593,17 @@ const Finance = () => {
           </div>
         </div>
 
-        {/* Expense Card */}
+        {/* Total Expense Card */}
         <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
             <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
-              Total Expenses (This Month)
+              Total Expenses
             </span>
             <span className="text-sm font-extrabold text-neutral-800">
-              ₹{statsExpense.toLocaleString()}
+              ₹{totalAllTimeExpense.toLocaleString()}
+            </span>
+            <span className="block text-[9px] text-rose-500 font-semibold mt-0.5">
+              Today: -₹{dailyExpenseSum.toLocaleString()}
             </span>
           </div>
           <div className="p-2 bg-rose-500/10 text-rose-600 rounded-md">
@@ -499,14 +611,17 @@ const Finance = () => {
           </div>
         </div>
 
-        {/* Net Profit Card */}
+        {/* Net Profit / Balance Card */}
         <div className="bg-white border border-neutral-200/60 p-4 rounded-lg flex items-center justify-between shadow-xs">
           <div>
             <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider block mb-1">
-              Net Profit (This Month)
+              Net Balance
             </span>
-            <span className={`text-sm font-extrabold ${statsNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              ₹{statsNet.toLocaleString()}
+            <span className={`text-sm font-extrabold ${totalAllTimeNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              ₹{totalAllTimeNet.toLocaleString()}
+            </span>
+            <span className={`block text-[9px] font-semibold mt-0.5 ${dailyNetSum >= 0 ? 'text-[#8a32c6]' : 'text-rose-500'}`}>
+              Today's Net: ₹{dailyNetSum.toLocaleString()}
             </span>
           </div>
           <div className="p-2 bg-[#8a32c6]/10 text-[#8a32c6] rounded-md">
@@ -585,54 +700,224 @@ const Finance = () => {
         </div>
       )}
 
-      {/* --- Filter Inputs for Tables --- */}
-      <div className="flex flex-wrap items-center gap-3 mt-6">
-        <select
-          value={selectedPartner}
-          onChange={(e) => setSelectedPartner(e.target.value)}
-          style={{ ...INPUT, width: 'auto', padding: '6px 12px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
-          onFocus={onFocus}
-          onBlur={onBlur}
-        >
-          <option value="All Partners">All Partners</option>
-          {partners.map(p => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
+      {/* --- Filter & View Controls --- */}
+      <div className="bg-white p-3.5 border border-neutral-200/70 rounded-lg shadow-xs space-y-3">
+        
+        {/* Row 1: Type Toggles (All / Show Income / Show Expense) & Search */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* View Type Toggle Buttons */}
+          <div className="flex items-center bg-neutral-100 p-1 rounded-md">
+            {[
+              { id: 'all', label: 'All Transactions' },
+              { id: 'income', label: 'Show Income' },
+              { id: 'expense', label: 'Show Expense' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setViewType(tab.id)}
+                className={`px-3 py-1 text-[11px] font-bold rounded transition-all ${
+                  viewType === tab.id
+                    ? 'bg-[#8a32c6] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          style={{ ...INPUT, width: 'auto', padding: '6px 12px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
-          onFocus={onFocus}
-          onBlur={onBlur}
-        >
-          <option value="All Months">All Months</option>
-          {getAvailableMonths().map(m => {
-            const [y, num] = m.split('-');
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return (
-              <option key={m} value={m}>{months[parseInt(num) - 1]} {y}</option>
-            );
-          })}
-        </select>
+          {/* Reason / Details Text Search */}
+          <div className="relative min-w-[200px] flex-1 max-w-xs">
+            <FiSearch size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8a32c6]" />
+            <input
+              type="text"
+              placeholder="Search reason or details..."
+              value={reasonSearch}
+              onChange={(e) => setReasonSearch(e.target.value)}
+              style={{ ...INPUT, paddingLeft: 26, fontSize: 10 }}
+              onFocus={onFocus}
+              onBlur={onBlur}
+            />
+            {reasonSearch && (
+              <button 
+                type="button"
+                onClick={() => setReasonSearch('')} 
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
+              >
+                <FiX size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Dropdown Filters (Category/Reason, Period, Source, Partner, Month) */}
+        <div className="flex flex-wrap items-center gap-2.5 text-[10px]">
+          
+          {/* 1. Category / Reason Filter (e.g. Travel, Office, etc.) */}
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-neutral-500 uppercase">Reason/Category:</span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              style={{ ...INPUT, width: 'auto', padding: '5px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+              onFocus={onFocus}
+              onBlur={onBlur}
+            >
+              <option value="All Categories">All Categories / Reasons</option>
+              {expenseCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Period Filter (All / Today / This Week / This Month / Custom / By Month) */}
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-neutral-500 uppercase">Period:</span>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              style={{ ...INPUT, width: 'auto', padding: '5px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+              onFocus={onFocus}
+              onBlur={onBlur}
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today (Daily)</option>
+              <option value="this_week">This Week (Weekly)</option>
+              <option value="this_month">This Month (Monthly)</option>
+              <option value="by_month">Select Month</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
+          </div>
+
+          {/* If By Month selected */}
+          {selectedPeriod === 'by_month' && (
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              style={{ ...INPUT, width: 'auto', padding: '5px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+              onFocus={onFocus}
+              onBlur={onBlur}
+            >
+              <option value="All Months">All Months</option>
+              {getAvailableMonths().map(m => {
+                const [y, num] = m.split('-');
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return (
+                  <option key={m} value={m}>{months[parseInt(num) - 1]} {y}</option>
+                );
+              })}
+            </select>
+          )}
+
+          {/* If Custom Date Range selected */}
+          {selectedPeriod === 'custom' && (
+            <div className="flex items-center gap-1.5 bg-purple-50/50 p-1 rounded border border-purple-200">
+              <span className="text-[9px] font-bold text-neutral-500">From:</span>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                style={{ ...INPUT, width: 'auto', padding: '4px 6px', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+              />
+              <span className="text-[9px] font-bold text-neutral-500">To:</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                style={{ ...INPUT, width: 'auto', padding: '4px 6px', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+              />
+            </div>
+          )}
+
+          {/* 3. Source Filter (Company / Client / All Sources) */}
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-neutral-500 uppercase">Source:</span>
+            <select
+              value={selectedSourceType}
+              onChange={(e) => setSelectedSourceType(e.target.value)}
+              style={{ ...INPUT, width: 'auto', padding: '5px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+              onFocus={onFocus}
+              onBlur={onBlur}
+            >
+              <option value="All Sources">All Sources</option>
+              <option value="Company">Company</option>
+              <option value="Client">Client</option>
+            </select>
+          </div>
+
+          {/* 4. Partner Filter */}
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-neutral-500 uppercase">Partner:</span>
+            <select
+              value={selectedPartner}
+              onChange={(e) => setSelectedPartner(e.target.value)}
+              style={{ ...INPUT, width: 'auto', padding: '5px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
+              onFocus={onFocus}
+              onBlur={onBlur}
+            >
+              <option value="All Partners">All Partners</option>
+              {partners.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reset Filters button */}
+          {(selectedCategory !== 'All Categories' || selectedPeriod !== 'all' || selectedPartner !== 'All Partners' || selectedSourceType !== 'All Sources' || reasonSearch || selectedMonth !== 'All Months') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('All Categories');
+                setSelectedPeriod('all');
+                setSelectedPartner('All Partners');
+                setSelectedSourceType('All Sources');
+                setSelectedMonth('All Months');
+                setReasonSearch('');
+                setCustomStartDate('');
+                setCustomEndDate('');
+              }}
+              className="text-[#8a32c6] hover:underline font-bold text-[10px] ml-auto"
+            >
+              Reset Filters
+            </button>
+          )}
+
+        </div>
+
       </div>
 
-      {/* --- Unified Financial Ledger Table (Combined Inflow & Outflow Tally) --- */}
+      {/* --- Unified Financial Ledger Table (Combined Inflow & Outflow Tally with Daily Tally in Position) --- */}
       <div className="bg-white border border-neutral-200/60 rounded-lg overflow-hidden mt-2 shadow-xs">
+        
+        {/* Table Bar with Daily Income & Filtered Tally Badges (Swapped Position) */}
         <div className="p-3 bg-purple-50/40 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">
-            Transactions Ledger & Tally
-          </h2>
-          <div className="flex items-center space-x-3 text-[10px] font-semibold">
-            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              Income Total: +₹{totalInflowSum.toLocaleString()}
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xs font-extrabold text-[#8a32c6] uppercase tracking-widest">
+              Transactions Ledger & Tally
+            </h2>
+            <span className="text-[10px] bg-purple-100 text-[#8a32c6] px-2 py-0.5 rounded font-bold uppercase">
+              {viewType === 'income' ? 'Income Only' : viewType === 'expense' ? 'Expense Only' : 'All Rows'}
             </span>
-            <span className="text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-              Expense Total: -₹{totalOutflowSum.toLocaleString()}
+          </div>
+
+          {/* Badges: Daily Income in Position & Filtered Totals */}
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold">
+            {/* Daily Income badge */}
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold" title="Today's total inflow">
+              Daily Income: +₹{dailyIncomeSum.toLocaleString()}
             </span>
-            <span className={`px-2 py-0.5 rounded border font-extrabold ${netTallySum >= 0 ? 'bg-purple-50 text-[#8a32c6] border-purple-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-              Net Tally: ₹{netTallySum.toLocaleString()}
+            <span className="text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-bold" title="Today's total outflow">
+              Daily Expense: -₹{dailyExpenseSum.toLocaleString()}
+            </span>
+            <span className={`px-2 py-0.5 rounded border font-extrabold ${dailyNetSum >= 0 ? 'bg-purple-50 text-[#8a32c6] border-purple-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`} title="Today's net">
+              Daily Net: ₹{dailyNetSum.toLocaleString()}
+            </span>
+
+            {/* Filtered Total (when filters applied or viewing specific items) */}
+            <span className="text-neutral-400">│</span>
+            <span className="text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
+              Filtered Total: <strong className="text-neutral-900 font-mono">₹{filteredNetSum.toLocaleString()}</strong> ({combinedTransactions.length} records)
             </span>
           </div>
         </div>
@@ -714,7 +999,7 @@ const Finance = () => {
               ) : (
                 <tr>
                   <td colSpan="8" className="text-center py-8 text-neutral-400 italic">
-                    No income or expense transactions logged for the selected filters.
+                    No {viewType === 'income' ? 'income' : viewType === 'expense' ? 'expense' : 'income or expense'} transactions found matching your filters.
                   </td>
                 </tr>
               )}
@@ -786,8 +1071,8 @@ const Finance = () => {
                 />
                 {showSourceDropdown && (() => {
                   const q = incomeForm.source.toLowerCase();
-                  const filtered = businessClients.filter(b => 
-                    b.businessName?.toLowerCase().includes(q)
+                  const filtered = allClientSources.filter(b => 
+                    b.name?.toLowerCase().includes(q)
                   );
                   return filtered.length > 0 ? (
                     <div style={{
@@ -803,8 +1088,8 @@ const Finance = () => {
                             e.preventDefault();
                             setIncomeForm(prev => ({
                               ...prev,
-                              source: b.businessName,
-                              businessName: b.businessName || prev.businessName
+                              source: b.name,
+                              businessName: b.name || prev.businessName
                             }));
                             setShowSourceDropdown(false);
                           }}
@@ -817,10 +1102,13 @@ const Finance = () => {
                           onMouseEnter={e => e.currentTarget.style.background = 'rgba(138,50,198,0.06)'}
                           onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
                         >
-                          <span style={{ fontWeight: 700, color: '#8a32c6' }}>{b.businessName}</span>
-                          {b.agentName && (
-                            <span style={{ color: '#76726a', marginLeft: 8, fontWeight: 400 }}>
-                              ({b.agentName})
+                          <span style={{ fontWeight: 700, color: '#8a32c6' }}>{b.name}</span>
+                          <span style={{ padding: '1px 5px', borderRadius: 3, fontSize: 8, fontWeight: 700, marginLeft: 6, background: b.type === 'Client' ? 'rgba(16,185,129,0.12)' : 'rgba(138,50,198,0.12)', color: b.type === 'Client' ? '#059669' : '#8a32c6' }}>
+                            {b.type}
+                          </span>
+                          {b.agent && (
+                            <span style={{ color: '#76726a', marginLeft: 6, fontWeight: 400 }}>
+                              ({b.agent})
                             </span>
                           )}
                           {b.location && (

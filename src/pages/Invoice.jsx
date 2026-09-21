@@ -11,6 +11,7 @@ import invoiceLogo from '../assets/invoicelogo.webp';
 import ConfirmModal from '../components/ConfirmModal';
 import html2pdf from 'html2pdf.js';
 import { playAddSound, playDeleteSound, playSuccessSound } from '../utils/soundEffects';
+import { isValidPhoneNumber } from '../utils/validation';
 
 // Crisp SVG Data URIs for 100% html2canvas Icon Line Alignment
 const iconPhoneSVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%233c2269" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
@@ -354,8 +355,8 @@ const Invoice = () => {
       return null;
     }
 
-    if (invoiceForm.clientPhone && invoiceForm.clientPhone.replace(/\D/g, '').length !== 10) {
-      toast.error('Client phone number must be exactly 10 digits');
+    if (invoiceForm.clientPhone && invoiceForm.clientPhone.trim().length > 0 && !isValidPhoneNumber(invoiceForm.clientPhone)) {
+      toast.error('Please enter a valid phone number');
       return null;
     }
 
@@ -814,15 +815,13 @@ const Invoice = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-neutral-500 mb-1">Phone (10 Digits)</label>
+                  <label className="block text-neutral-500 mb-1">Phone Number</label>
                   <input
                     type="tel"
-                    maxLength={10}
-                    placeholder="9876543210"
+                    placeholder="e.g. +971 50 123 4567 or 9876543210"
                     value={invoiceForm.clientPhone}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setInvoiceForm({ ...invoiceForm, clientPhone: val });
+                      setInvoiceForm({ ...invoiceForm, clientPhone: e.target.value });
                     }}
                     style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }}
                     onFocus={onFocus}

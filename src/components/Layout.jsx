@@ -34,6 +34,7 @@ const Layout = ({ children }) => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: FiHome },
     { name: 'Business Numbers', path: '/business', icon: FiBriefcase },
+    { name: 'Our Clients', path: '/clients', icon: FiUsers },
     { name: 'Expenses', path: '/finance', icon: FiDollarSign },
     { name: 'Invoice Module', path: '/invoice', icon: FiPrinter },
     { name: 'PDF Store', path: '/pdfs', icon: FiFileText },

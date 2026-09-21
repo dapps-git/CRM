@@ -186,7 +186,7 @@ const Members = () => {
       return;
     }
     if (!isPhoneValid) {
-      toast.error('Phone number must be exactly 10 digits');
+      toast.error('Please enter a valid phone number');
       return;
     }
     if (!hasValidIdProof) {
@@ -542,12 +542,12 @@ const Members = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Phone Number (10 Digits) *</label>
+                  <label className="block text-neutral-500 uppercase tracking-wider font-bold mb-1">Phone Number *</label>
                   <input
                     type="text"
                     name="phoneNumber"
                     required
-                    placeholder="e.g. 9876543210"
+                    placeholder="e.g. +971 50 123 4567 or 9876543210"
                     value={form.phoneNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -555,7 +555,7 @@ const Members = () => {
                     onFocus={onFocus}
                   />
                   {touched.phoneNumber && !isPhoneValid && (
-                    <span className="text-[9px] text-rose-500 block font-normal mt-0.5">Exactly 10 digits required</span>
+                    <span className="text-[9px] text-rose-500 block font-normal mt-0.5">Please enter a valid phone number</span>
                   )}
                 </div>
 

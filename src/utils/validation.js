@@ -14,10 +14,17 @@ export const isNumbersOnly = (val) => {
   return /^\d+$/.test(String(val).trim());
 };
 
-// Exactly 10 digits
+// Phone / Contact number validation (allows international formats with +, spaces, dashes, brackets, 4-25 chars)
+export const isValidPhoneNumber = (val) => {
+  if (!val) return true; // empty checked separately by required
+  const cleaned = String(val).trim();
+  // Valid phone format: optional leading '+', digits, spaces, hyphens, parentheses, minimum 4 digits
+  return /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{3,20}$/.test(cleaned) && cleaned.replace(/\D/g, '').length >= 4;
+};
+
+// Backwards-compatible alias for phone validation (supports abroad / international numbers)
 export const isExactly10Digits = (val) => {
-  if (!val) return true;
-  return /^\d{10}$/.test(String(val).trim());
+  return isValidPhoneNumber(val);
 };
 
 /**

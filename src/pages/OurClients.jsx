@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FiSearch, FiPlus, FiEdit, FiTrash2, FiDownload,
-  FiChevronLeft, FiChevronRight, FiX
+  FiChevronLeft, FiChevronRight, FiX, FiUsers
 } from 'react-icons/fi';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { isLettersOnly, isExactly10Digits } from '../utils/validation';
+import { isLettersOnly, isValidPhoneNumber } from '../utils/validation';
 import ConfirmModal from '../components/ConfirmModal';
 
-const Business = () => {
-  const [businesses, setBusinesses] = useState([]);
+const OurClients = () => {
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('date');
@@ -25,7 +25,7 @@ const Business = () => {
   const [deleting, setDeleting] = useState(false);
 
   const [form, setForm] = useState({
-    businessName: '',
+    clientName: '',
     agentName: '',
     role: '',
     contactNumber: '',
@@ -58,20 +58,20 @@ const Business = () => {
     }
   };
 
-  const fetchBusinesses = async () => {
+  const fetchClients = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/business', { params: { search, sortBy, order, page } });
-      setBusinesses(res.data.businesses || []);
+      const res = await api.get('/client', { params: { search, sortBy, order, page } });
+      setClients(res.data.clients || []);
       setTotalPages(res.data.pages || 1);
     } catch {
-      toast.error('Failed to load businesses list');
+      toast.error('Failed to load clients list');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchBusinesses(); }, [search, sortBy, order, page]);
+  useEffect(() => { fetchClients(); }, [search, sortBy, order, page]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,14 +83,14 @@ const Business = () => {
   };
 
   // Validations
-  const isBusinessNameValid = form.businessName.trim() !== '' && isLettersOnly(form.businessName);
+  const isClientNameValid = form.clientName.trim() !== '' && isLettersOnly(form.clientName);
   const isAgentNameValid = form.agentName.trim() !== '' && isLettersOnly(form.agentName);
   const isRoleValid = form.role.trim() !== '' && isLettersOnly(form.role);
-  const isContactValid = isExactly10Digits(form.contactNumber);
+  const isContactValid = isValidPhoneNumber(form.contactNumber);
   const isLocationValid = form.location.trim() !== '';
   const isDescriptionValid = form.description.trim() !== '';
 
-  const isFormValid = isBusinessNameValid && isAgentNameValid && isRoleValid && isContactValid && isLocationValid && isDescriptionValid;
+  const isFormValid = isClientNameValid && isAgentNameValid && isRoleValid && isContactValid && isLocationValid && isDescriptionValid;
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -115,17 +115,17 @@ const Business = () => {
     };
     try {
       if (editId) {
-        await api.put(`/business/${editId}`, payload);
-        toast.success('Business lead updated successfully');
+        await api.put(`/client/${editId}`, payload);
+        toast.success('Client details updated successfully');
       } else {
-        await api.post('/business', payload);
-        toast.success('Business lead added successfully');
+        await api.post('/client', payload);
+        toast.success('Client added successfully');
       }
       setIsModalOpen(false);
       resetForm();
-      fetchBusinesses();
+      fetchClients();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit lead');
+      toast.error(err.response?.data?.message || 'Failed to submit client');
     } finally {
       setSubmitting(false);
     }
@@ -139,12 +139,12 @@ const Business = () => {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await api.delete(`/business/${deleteId}`);
-      toast.success('Lead removed successfully');
+      await api.delete(`/client/${deleteId}`);
+      toast.success('Client removed successfully');
       setDeleteId(null);
-      fetchBusinesses();
+      fetchClients();
     } catch {
-      toast.error('Failed to delete lead');
+      toast.error('Failed to delete client');
     } finally {
       setDeleting(false);
     }
@@ -153,7 +153,7 @@ const Business = () => {
   const openEditModal = (item) => {
     setEditId(item._id);
     setForm({
-      businessName: item.businessName || '',
+      clientName: item.clientName || '',
       agentName: item.agentName || '',
       role: item.role || '',
       contactNumber: item.contactNumber || '',
@@ -175,7 +175,7 @@ const Business = () => {
   const resetForm = () => {
     setEditId(null);
     setForm({
-      businessName: '', agentName: '', role: '', contactNumber: '',
+      clientName: '', agentName: '', role: '', contactNumber: '',
       location: '', description: '',
       date: new Date().toISOString().split('T')[0]
     });
@@ -185,10 +185,10 @@ const Business = () => {
 
   const handleExportExcel = async () => {
     try {
-      const res = await api.get('/business/export/excel', { responseType: 'blob' });
+      const res = await api.get('/client/export/excel', { responseType: 'blob' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(new Blob([res.data]));
-      link.download = 'crevionads_leads.xlsx';
+      link.download = 'crevionads_our_clients.xlsx';
       link.click();
       toast.success('Excel report downloaded');
     } catch { toast.error('Excel export failed'); }
@@ -196,10 +196,10 @@ const Business = () => {
 
   const handleExportPDF = async () => {
     try {
-      const res = await api.get('/business/export/pdf', { responseType: 'blob' });
+      const res = await api.get('/client/export/pdf', { responseType: 'blob' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(new Blob([res.data]));
-      link.download = 'crevionads_leads.pdf';
+      link.download = 'crevionads_our_clients.pdf';
       link.click();
       toast.success('PDF report downloaded');
     } catch { toast.error('PDF export failed'); }
@@ -210,7 +210,7 @@ const Business = () => {
     else { setSortBy(field); setOrder('asc'); }
   };
 
-  /* ─── Modern Input Style (Cleaner Sharp Corners) ─── */
+  /* ─── Modern Input Style ─── */
   const INPUT = {
     background: '#ffffff',
     border: '1px solid rgba(138,50,198,0.2)',
@@ -232,9 +232,9 @@ const Business = () => {
       {/* ── Header ── */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Business Numbers</h1>
+          <h1 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Our Clients</h1>
           <p className="text-[10px] text-brand-600 font-semibold mt-0.5">
-            Register, view, and track leads for Crevionads.
+            Manage, view, and track active clients for Crevionads.
           </p>
         </div>
 
@@ -260,7 +260,7 @@ const Business = () => {
             onMouseEnter={e => e.currentTarget.style.background = '#7828b0'}
             onMouseLeave={e => e.currentTarget.style.background = '#8a32c6'}
           >
-            <FiPlus size={11} /> Add Lead
+            <FiPlus size={11} /> Add Client
           </button>
         </div>
       </div>
@@ -271,7 +271,7 @@ const Business = () => {
           <FiSearch size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#8a32c6', pointerEvents: 'none' }} />
           <input
             type="text"
-            placeholder="Search leads..."
+            placeholder="Search clients..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ ...INPUT, paddingLeft: 28 }}
@@ -282,7 +282,7 @@ const Business = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '10px', fontWeight: 700, color: '#76726a' }}>
           <span>Sort:</span>
-          {[['businessName', 'Name'], ['date', 'Date']].map(([field, label]) => (
+          {[['clientName', 'Name'], ['date', 'Date']].map(([field, label]) => (
             <button
               type="button"
               key={field}
@@ -306,27 +306,27 @@ const Business = () => {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', gap: 12 }}>
             <div style={{ width: 28, height: 28, border: '2px solid #8a32c6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-            <p style={{ fontSize: 10, color: '#76726a' }}>Loading leads data...</p>
+            <p style={{ fontSize: 10, color: '#76726a' }}>Loading clients data...</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(138,50,198,0.15)', background: 'rgba(138,50,198,0.06)' }}>
-                  {['Business Name','Agent Name','Role','Contact','Location','Requirement','Date','Actions'].map(h => (
+                  {['Client Name','Agent Name','Role','Contact','Location','Requirement','Date','Actions'].map(h => (
                     <th key={h} style={{ padding: '11px 12px', textAlign: h === 'Actions' ? 'right' : 'left', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#8a32c6', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {businesses.length > 0 ? businesses.map((item) => (
+                {clients.length > 0 ? clients.map((item) => (
                   <tr
                     key={item._id}
                     style={{ borderBottom: '1px solid rgba(138,50,198,0.06)', transition: 'background 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(138,50,198,0.02)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2c2438' }}>{item.businessName}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2c2438' }}>{item.clientName}</td>
                     <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.agentName}</td>
                     <td style={{ padding: '9px 12px', color: '#76726a' }}>{item.role}</td>
                     <td style={{ padding: '9px 12px', fontFamily: 'JetBrains Mono, monospace', color: '#57544e' }}>{item.contactNumber}</td>
@@ -363,7 +363,7 @@ const Business = () => {
                 )) : (
                   <tr>
                     <td colSpan="8" style={{ textAlign: 'center', padding: '40px 0', color: '#a5a198', fontSize: 11, fontStyle: 'italic' }}>
-                      No business leads found matching your search.
+                      No clients found matching your search.
                     </td>
                   </tr>
                 )}
@@ -412,27 +412,27 @@ const Business = () => {
             </button>
 
             <h3 style={{ fontSize: 11, fontWeight: 800, color: '#8a32c6', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 16 }}>
-              {editId ? 'Edit Business Lead' : 'Add New Lead'}
+              {editId ? 'Edit Client Record' : 'Add Our Client'}
             </h3>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Business Name *
+                    Client / Business Name *
                   </label>
                   <input 
                     type="text" 
-                    name="businessName" 
+                    name="clientName" 
                     required 
-                    value={form.businessName} 
+                    value={form.clientName} 
                     onChange={handleChange}
                     onBlur={handleBlur}
                     placeholder="e.g. Western Bakery"
-                    style={{ ...INPUT, borderColor: (touched.businessName && !isBusinessNameValid) ? '#ef4444' : INPUT.border }} 
+                    style={{ ...INPUT, borderColor: (touched.clientName && !isClientNameValid) ? '#ef4444' : INPUT.border }} 
                     onFocus={onFocus} 
                   />
-                  {touched.businessName && !isBusinessNameValid && (
+                  {touched.clientName && !isClientNameValid && (
                     <span style={{ fontSize: 9, color: '#ef4444', fontWeight: 600 }}>Letters and spaces only</span>
                   )}
                 </div>
@@ -469,7 +469,7 @@ const Business = () => {
                     value={form.role} 
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    placeholder="e.g. Developer"
+                    placeholder="e.g. Owner / Manager"
                     style={{ ...INPUT, borderColor: (touched.role && !isRoleValid) ? '#ef4444' : INPUT.border }} 
                     onFocus={onFocus} 
                   />
@@ -510,7 +510,7 @@ const Business = () => {
                     value={form.location} 
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    placeholder="e.g. Malappuram"
+                    placeholder="e.g. Malappuram / Dubai"
                     style={INPUT} 
                     onFocus={onFocus} 
                   />
@@ -567,7 +567,7 @@ const Business = () => {
                   name="description" 
                   rows="2" 
                   required
-                  placeholder="Enter lead details or notes..."
+                  placeholder="Enter client details or project notes..."
                   value={form.description} 
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -610,7 +610,7 @@ const Business = () => {
                     gap: 6 
                   }}
                 >
-                  {submitting ? 'Saving...' : 'Save Lead'}
+                  {submitting ? 'Saving...' : 'Save Client'}
                 </button>
               </div>
             </form>
@@ -623,9 +623,9 @@ const Business = () => {
         isOpen={Boolean(deleteId)}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Delete Business Lead"
-        message="Are you sure you want to remove this lead record? This action cannot be undone."
-        confirmText="Remove Lead"
+        title="Delete Client Record"
+        message="Are you sure you want to remove this client record? This action cannot be undone."
+        confirmText="Remove Client"
         loading={deleting}
       />
 
@@ -633,4 +633,4 @@ const Business = () => {
   );
 };
 
-export default Business;
+export default OurClients;

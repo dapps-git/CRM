@@ -11,6 +11,7 @@ import Splash from './pages/Splash';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Business from './pages/Business';
+import OurClients from './pages/OurClients';
 import Finance from './pages/Finance';
 import Members from './pages/Members';
 import Leaves from './pages/Leaves';
@@ -68,6 +69,7 @@ const App = () => {
           {/* Protected Application Routes */}
           <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/business" element={<ProtectedRoute><Layout><Business /></Layout></ProtectedRoute>} />
+          <Route path="/clients" element={<ProtectedRoute><Layout><OurClients /></Layout></ProtectedRoute>} />
           <Route path="/finance" element={<ProtectedRoute><Layout><Finance /></Layout></ProtectedRoute>} />
           <Route path="/invoice" element={<ProtectedRoute><Layout><Invoice /></Layout></ProtectedRoute>} />
           <Route path="/pdfs" element={<ProtectedRoute><Layout><PDFStore /></Layout></ProtectedRoute>} />
