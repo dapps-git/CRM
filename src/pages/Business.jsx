@@ -43,6 +43,7 @@ const Business = () => {
     'Application Development', 'CRM Development', 'ERP Development',
     'E-Commerce', 'Video Editing', 'Photography', 'Branding',
     'Social Media Handling', 'Posters', 'GMB creation', 'GMB number adding', 'NFC',
+    'Meta Ads', 'Google Ads',
     'Other'
   ];
 
