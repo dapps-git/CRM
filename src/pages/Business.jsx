@@ -84,8 +84,8 @@ const Business = () => {
   };
 
   // Validations
-  const isBusinessNameValid = form.businessName.trim() !== '' && isLettersOnly(form.businessName);
-  const isAgentNameValid = form.agentName.trim() !== '' && isLettersOnly(form.agentName);
+  const isBusinessNameValid = form.businessName.trim() === '' || isLettersOnly(form.businessName);
+  const isAgentNameValid = form.agentName.trim() === '' || isLettersOnly(form.agentName);
   const isRoleValid = form.role.trim() !== '' && isLettersOnly(form.role);
   const isContactValid = isExactly10Digits(form.contactNumber);
   const isLocationValid = form.location.trim() !== '';
@@ -327,8 +327,8 @@ const Business = () => {
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(138,50,198,0.02)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2c2438' }}>{item.businessName}</td>
-                    <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.agentName}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2c2438' }}>{item.businessName || '-'}</td>
+                    <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.agentName || '-'}</td>
                     <td style={{ padding: '9px 12px', color: '#76726a' }}>{item.role}</td>
                     <td style={{ padding: '9px 12px', fontFamily: 'JetBrains Mono, monospace', color: '#57544e' }}>{item.contactNumber}</td>
                     <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.location}</td>
@@ -420,12 +420,11 @@ const Business = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Business Name *
+                    Business Name
                   </label>
                   <input 
                     type="text" 
                     name="businessName" 
-                    required 
                     value={form.businessName} 
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -439,12 +438,11 @@ const Business = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Agent Name *
+                    Agent Name
                   </label>
                   <input 
                     type="text" 
                     name="agentName" 
-                    required 
                     value={form.agentName} 
                     onChange={handleChange}
                     onBlur={handleBlur}
