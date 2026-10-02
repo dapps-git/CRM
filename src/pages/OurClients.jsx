@@ -49,10 +49,6 @@ const OurClients = () => {
 
   const toggleRequirement = (req) => {
     if (selectedRequirements.includes(req)) {
-      if (selectedRequirements.length === 1) {
-        toast.error('Please select at least one requirement');
-        return;
-      }
       setSelectedRequirements(selectedRequirements.filter(r => r !== req));
     } else {
       setSelectedRequirements([...selectedRequirements, req]);
@@ -83,13 +79,13 @@ const OurClients = () => {
     setTouched({ ...touched, [e.target.name]: true });
   };
 
-  // Validations
-  const isClientNameValid = form.clientName.trim() !== '' && isLettersOnly(form.clientName);
+  // Validations - all fields optional, only validate format if provided
+  const isClientNameValid = form.clientName.trim() === '' || isLettersOnly(form.clientName);
   const isAgentNameValid = form.agentName.trim() === '' || isLettersOnly(form.agentName);
-  const isRoleValid = form.role.trim() !== '' && isLettersOnly(form.role);
-  const isContactValid = isValidPhoneNumber(form.contactNumber);
-  const isLocationValid = form.location.trim() !== '';
-  const isDescriptionValid = form.description.trim() !== '';
+  const isRoleValid = form.role.trim() === '' || isLettersOnly(form.role);
+  const isContactValid = form.contactNumber.trim() === '' || isValidPhoneNumber(form.contactNumber);
+  const isLocationValid = true;
+  const isDescriptionValid = true;
 
   const isFormValid = isClientNameValid && isAgentNameValid && isRoleValid && isContactValid && isLocationValid && isDescriptionValid;
 
@@ -98,11 +94,6 @@ const OurClients = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
-
-    if (!form.description.trim()) {
-      toast.error('Description is required. Please provide details before submitting.');
-      return;
-    }
 
     if (!isFormValid) {
       toast.error('Please fix the validation errors in the form.');
@@ -329,17 +320,21 @@ const OurClients = () => {
                   >
                     <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2c2438' }}>{item.clientName || '-'}</td>
                     <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.agentName || '-'}</td>
-                    <td style={{ padding: '9px 12px', color: '#76726a' }}>{item.role}</td>
-                    <td style={{ padding: '9px 12px', fontFamily: 'JetBrains Mono, monospace', color: '#57544e' }}>{item.contactNumber}</td>
-                    <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.location}</td>
+                    <td style={{ padding: '9px 12px', color: '#76726a' }}>{item.role || '-'}</td>
+                    <td style={{ padding: '9px 12px', fontFamily: 'JetBrains Mono, monospace', color: '#57544e' }}>{item.contactNumber || '-'}</td>
+                    <td style={{ padding: '9px 12px', color: '#57544e' }}>{item.location || '-'}</td>
                     <td style={{ padding: '9px 12px' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
-                        {(Array.isArray(item.requirement) ? item.requirement : (item.requirement ? item.requirement.split(', ') : [])).map((req, i) => (
-                          <span key={i} style={{ padding: '2px 7px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', background: 'rgba(138,50,198,0.08)', border: '1px solid rgba(138,50,198,0.2)', color: '#8a32c6', whiteSpace: 'nowrap' }}>
-                            {req}
-                          </span>
-                        ))}
-                      </div>
+                      {((Array.isArray(item.requirement) ? item.requirement : (item.requirement ? item.requirement.split(', ') : [])).length > 0) ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
+                          {(Array.isArray(item.requirement) ? item.requirement : (item.requirement ? item.requirement.split(', ') : [])).map((req, i) => (
+                            <span key={i} style={{ padding: '2px 7px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', background: 'rgba(138,50,198,0.08)', border: '1px solid rgba(138,50,198,0.2)', color: '#8a32c6', whiteSpace: 'nowrap' }}>
+                              {req}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#a5a198' }}>-</span>
+                      )}
                     </td>
                     <td style={{ padding: '9px 12px', fontFamily: 'JetBrains Mono, monospace', color: '#888', fontSize: 10 }}>
                       {item.date ? new Date(item.date).toLocaleDateString() : ''}
@@ -420,12 +415,11 @@ const OurClients = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Client / Business Name *
+                    Client / Business Name
                   </label>
                   <input 
                     type="text" 
                     name="clientName" 
-                    required 
                     value={form.clientName} 
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -460,12 +454,11 @@ const OurClients = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Designation *
+                    Designation
                   </label>
                   <input 
                     type="text" 
                     name="role" 
-                    required 
                     value={form.role} 
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -479,12 +472,11 @@ const OurClients = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Contact Number *
+                    Contact Number
                   </label>
                   <input 
                     type="text" 
                     name="contactNumber" 
-                    required 
                     value={form.contactNumber} 
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -501,12 +493,11 @@ const OurClients = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Location *
+                    Location
                   </label>
                   <input 
                     type="text" 
                     name="location" 
-                    required 
                     value={form.location} 
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -517,12 +508,11 @@ const OurClients = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                    Date Added *
+                    Date Added
                   </label>
                   <input 
                     type="date" 
                     name="date" 
-                    required 
                     value={form.date} 
                     onChange={handleChange}
                     style={{ ...INPUT, fontFamily: 'JetBrains Mono, monospace' }} 
@@ -533,7 +523,7 @@ const OurClients = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 5 }}>
-                  Requirements ({selectedRequirements.length} selected) *
+                  Requirements ({selectedRequirements.length} selected)
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, maxHeight: 120, overflowY: 'auto', padding: '8px 10px', border: '1px solid rgba(138,50,198,0.18)', borderRadius: 6, background: '#fafaf9' }}>
                   {requirementsList.map(r => {
@@ -561,22 +551,18 @@ const OurClients = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#76726a', marginBottom: 4 }}>
-                  Description *
+                  Description
                 </label>
                 <textarea 
                   name="description" 
                   rows="2" 
-                  required
                   placeholder="Enter client details or project notes..."
                   value={form.description} 
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  style={{ ...INPUT, resize: 'none', borderColor: (touched.description && !isDescriptionValid) ? '#ef4444' : INPUT.border }} 
+                  style={{ ...INPUT, resize: 'none' }} 
                   onFocus={onFocus} 
                 />
-                {touched.description && !isDescriptionValid && (
-                  <span style={{ fontSize: 9, color: '#ef4444', fontWeight: 600 }}>Description is required</span>
-                )}
               </div>
 
               <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
